@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Rando RV">
+<meta name="theme-color" content="#f4f5f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111513" media="(prefers-color-scheme: dark)">
+<title>Rando Recto Verso IdF</title>
+<style>
+:root{--bg:#f4f5f1;--card:#fff;--ink:#1c2220;--muted:#5f6a64;--line:#dfe3dd;--accent:#2f6b4f;--soft:#e2eee7;--warm:#b5562f;--miss:#e7eae5;color-scheme:light dark}
+@media (prefers-color-scheme:dark){:root{--bg:#111513;--card:#1a201d;--ink:#e5ebe7;--muted:#98a49d;--line:#2b3430;--accent:#7cc3a0;--soft:#1e3128;--warm:#e88a63;--miss:#222925}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:150px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.pad{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+header{padding-top:20px;padding-bottom:6px;display:flex;flex-direction:column;gap:8px}
+h1{font:800 1.9rem/1.05 -apple-system,"SF Pro Display",system-ui,sans-serif;margin:0;letter-spacing:-.02em}
+h2{font:700 1.2rem/1.2 -apple-system,"SF Pro Display",system-ui,sans-serif;margin:0}
+.sub{margin:0;color:var(--muted);font-size:.93rem}
+.strip{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;margin-top:4px}
+.strip a{height:24px;border-radius:5px;display:grid;place-items:center;font-size:.72rem;font-variant-numeric:tabular-nums;text-decoration:none;background:var(--miss);color:var(--muted)}
+.strip a.on{background:var(--accent);color:var(--card);font-weight:700}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);padding-top:calc(8px + env(safe-area-inset-top));margin-top:calc(-1 * env(safe-area-inset-top));padding-bottom:8px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+input,select{font:inherit;text-overflow:ellipsis;font-size:16px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-height:44px;width:100%;-webkit-appearance:none;appearance:none}
+select{padding-right:30px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23889' stroke-width='1.6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.two{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.lines{display:flex;flex-wrap:wrap;gap:5px}.lines span{font-size:.74rem;font-weight:700;background:var(--ink);color:var(--card);border-radius:6px;padding:2px 7px}
+.miss a{margin-left:auto;font-weight:600;font-size:.85rem;color:var(--accent);padding:4px 0 4px 10px}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left)));padding-inline:max(16px,env(safe-area-inset-left))}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;font:inherit;font-size:.9rem;min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--card)}
+.count{font-size:.85rem;color:var(--muted)}
+ul.list{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px 14px;display:flex;flex-direction:column;gap:6px}
+.card:target{box-shadow:0 0 0 2px var(--warm)}
+.hit{display:flex;align-items:flex-start;gap:10px;text-decoration:none;color:inherit;min-height:44px;padding-top:2px}
+.num{font:800 1.35rem/1 -apple-system,system-ui;color:var(--accent);min-width:2.1ch;font-variant-numeric:tabular-nums;padding-top:2px}
+.title{flex:1;font-weight:650;font-size:1.05rem;line-height:1.25}
+.go{color:var(--muted);font-size:1.5rem;line-height:1}
+.stats{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.92rem;font-variant-numeric:tabular-nums}
+.lvl{border:1px solid var(--line);border-radius:6px;padding:0 6px;font-size:.8rem}
+.route{font-size:.92rem}.route em{font-style:normal;color:var(--accent);font-weight:600}
+.meta{font-size:.84rem;color:var(--muted)}
+.tags{display:flex;flex-wrap:wrap;gap:5px}.tags span{font-size:.74rem;background:var(--soft);color:var(--accent);border-radius:6px;padding:2px 7px}
+.note{font-size:.8rem;color:var(--warm)}
+.empty{margin-top:12px;padding:20px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:16px}
+details{margin-top:24px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px}
+summary{font-weight:650;min-height:32px;display:flex;align-items:center;cursor:pointer}
+.miss{list-style:none;margin:8px 0 0;padding:0;font-size:.9rem}
+.miss li{display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--line)}
+.miss li:target{background:var(--soft)}
+.miss b{min-width:2.5ch;color:var(--muted);font-variant-numeric:tabular-nums}
+footer{color:var(--muted);font-size:.8rem;padding-block:20px 28px}
+</style>
+</head>
+<body>
+<header class="pad">
+<h1>Rando Recto Verso IdF</h1>
+<p class="sub">100 fiches sur 100 retrouvées, toutes au départ d'une gare. Touche un titre pour ouvrir la fiche. Pour les autres, le tracé GPX est en bas de page.</p>
+<nav class="strip" aria-label="Fiches 1 à 100"><a class="on" href="#f1">1</a><a class="on" href="#f2">2</a><a class="on" href="#f3">3</a><a class="on" href="#f4">4</a><a class="on" href="#f5">5</a><a class="on" href="#f6">6</a><a class="on" href="#f7">7</a><a class="on" href="#f8">8</a><a class="on" href="#f9">9</a><a class="on" href="#f10">10</a><a class="on" href="#f11">11</a><a class="on" href="#f12">12</a><a class="on" href="#f13">13</a><a class="on" href="#f14">14</a><a class="on" href="#f15">15</a><a class="on" href="#f16">16</a><a class="on" href="#f17">17</a><a class="on" href="#f18">18</a><a class="on" href="#f19">19</a><a class="on" href="#f20">20</a><a class="on" href="#f21">21</a><a class="on" href="#f22">22</a><a class="on" href="#f23">23</a><a class="on" href="#f24">24</a><a class="on" href="#f25">25</a><a class="on" href="#f26">26</a><a class="on" href="#f27">27</a><a class="on" href="#f28">28</a><a class="on" href="#f29">29</a><a class="on" href="#f30">30</a><a class="on" href="#f31">31</a><a class="on" href="#f32">32</a><a class="on" href="#f33">33</a><a class="on" href="#f34">34</a><a class="on" href="#f35">35</a><a class="on" href="#f36">36</a><a class="on" href="#f37">37</a><a class="on" href="#f38">38</a><a class="on" href="#f39">39</a><a class="on" href="#f40">40</a><a class="on" href="#f41">41</a><a class="on" href="#f42">42</a><a class="on" href="#f43">43</a><a class="on" href="#f44">44</a><a class="on" href="#f45">45</a><a class="on" href="#f46">46</a><a class="on" href="#f47">47</a><a class="on" href="#f48">48</a><a class="on" href="#f49">49</a><a class="on" href="#f50">50</a><a class="on" href="#f51">51</a><a class="on" href="#f52">52</a><a class="on" href="#f53">53</a><a class="on" href="#f54">54</a><a class="on" href="#f55">55</a><a class="on" href="#f56">56</a><a class="on" href="#f57">57</a><a class="on" href="#f58">58</a><a class="on" href="#f59">59</a><a class="on" href="#f60">60</a><a class="on" href="#f61">61</a><a class="on" href="#f62">62</a><a class="on" href="#f63">63</a><a class="on" href="#f64">64</a><a class="on" href="#f65">65</a><a class="on" href="#f66">66</a><a class="on" href="#f67">67</a><a class="on" href="#f68">68</a><a class="on" href="#f69">69</a><a class="on" href="#f70">70</a><a class="on" href="#f71">71</a><a class="on" href="#f72">72</a><a class="on" href="#f73">73</a><a class="on" href="#f74">74</a><a class="on" href="#f75">75</a><a class="on" href="#f76">76</a><a class="on" href="#f77">77</a><a class="on" href="#f78">78</a><a class="on" href="#f79">79</a><a class="on" href="#f80">80</a><a class="on" href="#f81">81</a><a class="on" href="#f82">82</a><a class="on" href="#f83">83</a><a class="on" href="#f84">84</a><a class="on" href="#f85">85</a><a class="on" href="#f86">86</a><a class="on" href="#f87">87</a><a class="on" href="#f88">88</a><a class="on" href="#f89">89</a><a class="on" href="#f90">90</a><a class="on" href="#f91">91</a><a class="on" href="#f92">92</a><a class="on" href="#f93">93</a><a class="on" href="#f94">94</a><a class="on" href="#f95">95</a><a class="on" href="#f96">96</a><a class="on" href="#f97">97</a><a class="on" href="#f98">98</a><a class="on" href="#f99">99</a><a class="on" href="#f100">100</a></nav>
+</header>
+<div class="bar pad" id="bar">
+<input type="search" id="q" placeholder="Lieu, gare, titre…" aria-label="Rechercher" autocomplete="off">
+<div class="two"><select id="dept" aria-label="Département"><option value="">Département</option><option>Aisne</option><option>Aube</option><option>Calvados</option><option>Essonne</option><option>Eure</option><option>Eure-et-Loir</option><option>Hauts-de-Seine</option><option>Loiret</option><option>Marne</option><option>Oise</option><option>Orne</option><option>Perche</option><option>Seine-et-Marne</option><option>Seine-Maritime</option><option>Seine-Saint-Denis</option><option>Somme</option><option>Val-d'Oise</option><option>Val-de-Marne</option><option>Yonne</option><option>Yvelines</option></select>
+<select id="line" aria-label="Ligne de train"><option value="">Ligne</option><option value="RER A">RER A (6)</option><option value="RER B">RER B (6)</option><option value="RER C">RER C (13)</option><option value="RER D">RER D (12)</option><option value="H">Ligne H (8)</option><option value="J">Ligne J (13)</option><option value="K">Ligne K (1)</option><option value="L">Ligne L (6)</option><option value="N">Ligne N (13)</option><option value="P">Ligne P (12)</option><option value="R">Ligne R (11)</option><option value="U">Ligne U (3)</option><option value="V">Ligne V (2)</option><option value="Métro 1">Métro 1 (1)</option><option value="TER">TER (34)</option><option value="Intercités">Intercités (1)</option><option value="Bus/car">Bus/car (5)</option></select>
+<select id="sort" aria-label="Trier"><option value="n">Tri : numéro</option><option value="km">Plus courtes</option><option value="dp">Plus de D+</option><option value="ratio">Plus raides</option></select></div>
+<div class="chips" id="chips">
+<button class="chip" data-k="day" aria-pressed="false">Journée</button><button class="chip" data-k="multi" aria-pressed="false">2 jours +</button><button class="chip" data-k="k20" aria-pressed="false">20 km +</button><button class="chip" data-k="dp300" aria-pressed="false">300 m D+ +</button><button class="chip" data-k="loop" aria-pressed="false">Boucle</button><button class="chip" data-k="navigo" aria-pressed="false">Navigo</button><button class="chip" data-k="forest" aria-pressed="false">Forêt</button><button class="chip" data-k="water" aria-pressed="false">Bord de l'eau</button>
+</div>
+<div class="count" id="count">100 fiches</div>
+</div>
+<main class="pad">
+<ul class="list" id="list"><li class="card" id="f1" data-n="1" data-km="17" data-dp="70" data-dept="Seine-Saint-Denis" data-lines="|RER A|P|" data-f="day navigo water" data-s="belle-ile-en-marne neuilly-plaisance vaires-sur-marne (gare vaires - torcy) seine-saint-denis rer a, retour p 1">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/belle-ile-marne-rv" target="_blank" rel="noopener"><span class="num">1</span><span class="title">Belle-île-en-Marne</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>17</b> km</span><span><b>70</b> m D+</span><span>4h30</span><span class="lvl">Accessible</span></div>
+<div class="route">Neuilly-Plaisance → Vaires-sur-Marne (gare Vaires - Torcy)</div>
+<div class="lines"><span>RER A</span><span>Ligne P</span></div>
+<div class="meta">RER A, retour P · Seine-Saint-Denis</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Culture &amp; Patrimoine</span><span>Rando Navigo</span></div><div class="note">En-tête 70 m D+ mais le détail d'étape indique 17 km / 30 m D+ / 30 m D-.</div></li><li class="card" id="f2" data-n="2" data-km="15" data-dp="100" data-dept="Val-de-Marne" data-lines="|RER A|" data-f="day navigo water" data-s="rando guinguette en bord de marne joinville-le-pont saint-maur-creteil val-de-marne rer a 2">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/rando-guinguette-bord-marne-rv" target="_blank" rel="noopener"><span class="num">2</span><span class="title">Rando guinguette en bord de Marne</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>15</b> km</span><span><b>100</b> m D+</span><span>4h00</span><span class="lvl">Accessible</span></div>
+<div class="route">Joinville-le-Pont → Saint-Maur-Créteil</div>
+<div class="lines"><span>RER A</span></div>
+<div class="meta">RER A · Val-de-Marne</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Rando Navigo</span></div></li><li class="card" id="f3" data-n="3" data-km="14" data-dp="170" data-dept="Hauts-de-Seine" data-lines="|RER B|" data-f="day navigo" data-s="randonnee arbr-acadabrantesque robinson sceaux hauts-de-seine rer b, retour rer b 3">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/arbres-jardins-sud-parisien-rv" target="_blank" rel="noopener"><span class="num">3</span><span class="title">Randonnée arbr-acadabrantesque</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>14</b> km</span><span><b>170</b> m D+</span><span>4h00</span><span class="lvl">Accessible</span></div>
+<div class="route">Robinson → Sceaux</div>
+<div class="lines"><span>RER B</span></div>
+<div class="meta">RER B, retour RER B · Hauts-de-Seine</div>
+<div class="tags"><span>Culture &amp; Patrimoine</span><span>Familles</span><span>Rando Navigo</span></div><div class="note">Détail d'étape : 13,8 km / 170 m D+ / 190 m D-.</div></li><li class="card" id="f4" data-n="4" data-km="14" data-dp="200" data-dept="Hauts-de-Seine" data-lines="|RER C|V|" data-f="day navigo forest" data-s="les petites vosges de meudon meudon val-fleury petit jouy - les loges hauts-de-seine rer c, retour v 4">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/petites-vosges-meudon-rv" target="_blank" rel="noopener"><span class="num">4</span><span class="title">Les petites Vosges de Meudon</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>14</b> km</span><span><b>200</b> m D+</span><span>4h00</span><span class="lvl">Accessible</span></div>
+<div class="route">Meudon Val-Fleury → Petit Jouy - Les Loges</div>
+<div class="lines"><span>RER C</span><span>Ligne V</span></div>
+<div class="meta">RER C, retour V · Hauts-de-Seine</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Familles</span><span>Rando Navigo</span></div><div class="note">Détail d'étape : 14 km / 210 m D+ / 180 m D-. Variante courte : sortie à Viroflay après 10 km (Transilien N).</div></li><li class="card" id="f5" data-n="5" data-km="19" data-dp="260" data-dept="Hauts-de-Seine" data-lines="|N|U|L|" data-f="day navigo" data-s="les balcons de paris meudon suresnes-mont-valerien ou puteaux hauts-de-seine transilien n, retour u ou l 5">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/balcons-paris-rv" target="_blank" rel="noopener"><span class="num">5</span><span class="title">Les balcons de Paris</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>19</b> km</span><span><b>260</b> m D+</span><span>5h00</span><span class="lvl">Accessible</span></div>
+<div class="route">Meudon → Suresnes-Mont-Valérien ou Puteaux</div>
+<div class="lines"><span>Ligne N</span><span>Ligne U</span><span>Ligne L</span></div>
+<div class="meta">Transilien N, retour U ou L · Hauts-de-Seine</div>
+<div class="tags"><span>Culture &amp; Patrimoine</span><span>Rando Navigo</span></div></li><li class="card" id="f6" data-n="6" data-km="20" data-dp="250" data-dept="Hauts-de-Seine" data-lines="|Métro 1|RER C|N|U|V|" data-f="day k20 navigo" data-s="de paris a versailles a pied porte maillot versailles-chantiers hauts-de-seine metro 1, retour rer c, n, u ou v 6">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/paris-versailles-pied-rv" target="_blank" rel="noopener"><span class="num">6</span><span class="title">De Paris à Versailles à pied</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>20</b> km</span><span><b>250</b> m D+</span><span>5h30</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Porte Maillot → Versailles-Chantiers</div>
+<div class="lines"><span>Métro 1</span><span>RER C</span><span>Ligne N</span><span>Ligne U</span><span>Ligne V</span></div>
+<div class="meta">Métro 1, retour RER C, N, U ou V · Hauts-de-Seine</div>
+<div class="tags"><span>Culture &amp; Patrimoine</span><span>Rando Navigo</span></div></li><li class="card" id="f7" data-n="7" data-km="14" data-dp="270" data-dept="Hauts-de-Seine" data-lines="|RER A|L|" data-f="day navigo" data-s="la west coast francilienne rueil-malmaison marly-le-roi hauts-de-seine rer a, retour l 7">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/west-coast-francilienne-rv" target="_blank" rel="noopener"><span class="num">7</span><span class="title">La west coast francilienne</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>14</b> km</span><span><b>270</b> m D+</span><span>4h00</span><span class="lvl">Accessible</span></div>
+<div class="route">Rueil-Malmaison → Marly-le-Roi</div>
+<div class="lines"><span>RER A</span><span>Ligne L</span></div>
+<div class="meta">RER A, retour L · Hauts-de-Seine</div>
+<div class="tags"><span>Culture &amp; Patrimoine</span><span>Rando Navigo</span></div><div class="note">Détail d'étape : 14,3 km / 270 m D+ / 190 m D-. Variante courte : départ de la gare de Bougival. Département affiché Hauts-de-Seine bien que le parcours soit surtout dans les Yvelines.</div></li><li class="card" id="f8" data-n="8" data-km="21" data-dp="90" data-dept="Seine-et-Marne" data-lines="|P|" data-f="day k20 navigo water" data-s="l'ourcq cote campagne crouy-sur-ourcq isles-les-meldeuses seine-et-marne transilien p 8">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/canal-riviere-lourcq-cote-campagne-rv" target="_blank" rel="noopener"><span class="num">8</span><span class="title">L'Ourcq côté campagne</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>21</b> km</span><span><b>90</b> m D+</span><span>5h30</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Crouy-sur-Ourcq → Isles-lès-Meldeuses</div>
+<div class="lines"><span>Ligne P</span></div>
+<div class="meta">Transilien P · Seine-et-Marne</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Champêtre</span><span>Rando Navigo</span></div></li><li class="card" id="f9" data-n="9" data-km="15" data-dp="180" data-dept="Seine-et-Marne" data-lines="|P|" data-f="day loop navigo" data-s="aux portes du vignoble champenois nanteuil-saacy nanteuil-saacy seine-et-marne transilien p, ~50 min 9">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/portes-vignoble-champenois-rv" target="_blank" rel="noopener"><span class="num">9</span><span class="title">Aux portes du vignoble champenois</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>15</b> km</span><span><b>180</b> m D+</span><span>4h15</span><span class="lvl">Accessible</span></div>
+<div class="route">Nanteuil-Saâcy → <em>boucle</em></div>
+<div class="lines"><span>Ligne P</span></div>
+<div class="meta">Transilien P, ~50 min · Seine-et-Marne</div>
+<div class="tags"><span>Champêtre</span><span>Rando Navigo</span><span>Randonner pour manger</span></div></li><li class="card" id="f10" data-n="10" data-km="25" data-dp="360" data-dept="Seine-et-Marne" data-lines="|P|" data-f="day k20 dp300 navigo" data-s="l'ourcq par monts et par vaux lizy-sur-ourcq crouy-sur-ourcq seine-et-marne transilien p, changement a meaux 10">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/lourcq-monts-vaux-rv" target="_blank" rel="noopener"><span class="num">10</span><span class="title">L'Ourcq par monts et par vaux</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>25</b> km</span><span><b>360</b> m D+</span><span>7h00</span><span class="lvl">Difficile</span></div>
+<div class="route">Lizy-sur-Ourcq → Crouy-sur-Ourcq</div>
+<div class="lines"><span>Ligne P</span></div>
+<div class="meta">Transilien P, changement à Meaux · Seine-et-Marne</div>
+<div class="tags"><span>Champêtre</span><span>Rando Navigo</span></div></li><li class="card" id="f11" data-n="11" data-km="27" data-dp="330" data-dept="Seine-et-Marne" data-lines="|P|" data-f="day k20 dp300 navigo" data-s="sous le soleil de la brie la ferte-sous-jouarre coulommiers seine-et-marne transilien p, retour p (autre branche) 11">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/sous-soleil-brie-rv" target="_blank" rel="noopener"><span class="num">11</span><span class="title">Sous le soleil de la Brie</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>27</b> km</span><span><b>330</b> m D+</span><span>7h00</span><span class="lvl">Difficile</span></div>
+<div class="route">La Ferté-sous-Jouarre → Coulommiers</div>
+<div class="lines"><span>Ligne P</span></div>
+<div class="meta">Transilien P, retour P (autre branche) · Seine-et-Marne</div>
+<div class="tags"><span>Champêtre</span><span>Rando Navigo</span><span>Randonner pour manger</span></div><div class="note">Détail d'étape : 26,7 km / 330 m D+ / 320 m D-.</div></li><li class="card" id="f12" data-n="12" data-km="25" data-dp="300" data-dept="Seine-et-Marne" data-lines="|P|" data-f="day k20 dp300 navigo water" data-s="operation fromage dans la brie verte guerard coulommiers seine-et-marne transilien p, ~55 min 12">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/operation-fromage-brie-verte-rv" target="_blank" rel="noopener"><span class="num">12</span><span class="title">Opération fromage dans la Brie Verte</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>25</b> km</span><span><b>300</b> m D+</span><span>6h45</span><span class="lvl">Difficile</span></div>
+<div class="route">Guérard → Coulommiers</div>
+<div class="lines"><span>Ligne P</span></div>
+<div class="meta">Transilien P, ~55 min · Seine-et-Marne</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Rando Navigo</span><span>Randonner pour manger</span></div></li><li class="card" id="f13" data-n="13" data-km="15" data-dp="180" data-dept="Seine-et-Marne" data-lines="|P|" data-f="day navigo water" data-s="la venise la plus proche de paris mortcerf crecy-la-chapelle seine-et-marne transilien p, ~40 min 13">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/venise-plus-proche-paris-rv" target="_blank" rel="noopener"><span class="num">13</span><span class="title">La Venise la plus proche de Paris</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>15</b> km</span><span><b>180</b> m D+</span><span>4h00</span><span class="lvl">Accessible</span></div>
+<div class="route">Mortcerf → Crécy-la-Chapelle</div>
+<div class="lines"><span>Ligne P</span></div>
+<div class="meta">Transilien P, ~40 min · Seine-et-Marne</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Familles</span><span>Rando Navigo</span></div></li><li class="card" id="f14" data-n="14" data-km="36" data-dp="350" data-dept="Seine-et-Marne" data-lines="|P|" data-f="multi k20 dp300 loop navigo" data-s="bivouac dans la brie verte faremoutiers-pommeuse faremoutiers-pommeuse seine-et-marne transilien p, ~50 min 14">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/bivouac-brie-verte-rv" target="_blank" rel="noopener"><span class="num">14</span><span class="title">Bivouac dans la Brie Verte</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>36</b> km</span><span><b>350</b> m D+</span><span>2 jours</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Faremoutiers-Pommeuse → <em>boucle</em></div>
+<div class="lines"><span>Ligne P</span></div>
+<div class="meta">Transilien P, ~50 min · Seine-et-Marne</div>
+<div class="tags"><span>Bivouac</span><span>Champêtre</span><span>Rando Navigo</span></div></li><li class="card" id="f15" data-n="15" data-km="57" data-dp="880" data-dept="Seine-et-Marne" data-lines="|P|" data-f="multi k20 dp300 loop navigo water" data-s="integrale de la vallee du petit morin la ferte-sous-jouarre la ferte-sous-jouarre seine-et-marne transilien p, retour p 15">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/integrale-vallee-petit-morin-rv" target="_blank" rel="noopener"><span class="num">15</span><span class="title">Intégrale de la vallée du Petit Morin</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>57</b> km</span><span><b>880</b> m D+</span><span>3 jours</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">La Ferté-sous-Jouarre → <em>boucle</em></div>
+<div class="lines"><span>Ligne P</span></div>
+<div class="meta">Transilien P, retour P · Seine-et-Marne</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Dénivelé à portée de main</span><span>Rando Navigo</span></div><div class="note">3 étapes : La Ferté-sous-Jouarre → Camping du Choisel 8 km (120 D+) ; Choisel → Bellot 21,7 km (240 D+) ; Bellot → La Ferté-sous-Jouarre 26,5 km (500 D+). Nuit 1 camping (km 7,5), nuit 2 gîte à Bellot (km 30).</div></li><li class="card" id="f16" data-n="16" data-km="17" data-dp="190" data-dept="Seine-et-Marne" data-lines="|P|" data-f="day navigo" data-s="la citadelle de la brie longueville provins seine-et-marne transilien p (gare de l'est), retour p 16">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/minas-tirith-brie-rv" target="_blank" rel="noopener"><span class="num">16</span><span class="title">La citadelle de la Brie</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>17</b> km</span><span><b>190</b> m D+</span><span>4h30</span><span class="lvl">Accessible</span></div>
+<div class="route">Longueville → Provins</div>
+<div class="lines"><span>Ligne P</span></div>
+<div class="meta">Transilien P (gare de l'Est), retour P · Seine-et-Marne</div>
+<div class="tags"><span>Culture &amp; Patrimoine</span><span>Rando Navigo</span><span>Familles</span></div><div class="note">Slug ne reprend pas le titre (clin d'œil Minas Tirith). Détail : 17,5 km, 190 m D+, 180 m D-. Champ 'tr' résumé depuis « Comment s'y rendre » (pas de champ court sur la page).</div></li><li class="card" id="f17" data-n="17" data-km="22" data-dp="160" data-dept="Seine-et-Marne" data-lines="|P|" data-f="day k20 loop navigo" data-s="grand tour de chaumes-en-brie verneuil-l'etang verneuil-l'etang seine-et-marne transilien p (gare de l'est), retour p 17">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/grand-tour-chaumes-brie-rv" target="_blank" rel="noopener"><span class="num">17</span><span class="title">Grand tour de Chaumes-en-Brie</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>22</b> km</span><span><b>160</b> m D+</span><span>5h45</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Verneuil-l'Étang → <em>boucle</em></div>
+<div class="lines"><span>Ligne P</span></div>
+<div class="meta">Transilien P (gare de l'Est), retour P · Seine-et-Marne</div>
+<div class="tags"><span>Champêtre</span><span>Culture &amp; Patrimoine</span><span>Rando Navigo</span></div><div class="note">Détail : 22 km, 160 m D+, 160 m D-. Raccourci possible par le GR1 (Bon à savoir). 'tr' résumé depuis « Comment s'y rendre ».</div></li><li class="card" id="f18" data-n="18" data-km="23" data-dp="500" data-dept="Seine-et-Marne" data-lines="|R|" data-f="day k20 dp300 loop navigo forest" data-s="les trefonds de fontainebleau bois-le-roi bois-le-roi seine-et-marne transilien r 18">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/trefonds-fontainebleau-rv" target="_blank" rel="noopener"><span class="num">18</span><span class="title">Les tréfonds de Fontainebleau</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>23</b> km</span><span><b>500</b> m D+</span><span>6h00</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Bois-le-Roi → <em>boucle</em></div>
+<div class="lines"><span>Ligne R</span></div>
+<div class="meta">Transilien R · Seine-et-Marne</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Dénivelé à portée de main</span><span>Rando Navigo</span></div></li><li class="card" id="f19" data-n="19" data-km="12" data-dp="110" data-dept="Seine-et-Marne" data-lines="|R|" data-f="day navigo forest" data-s="balade familiale a fontainebleau bois-le-roi fontainebleau-avon seine-et-marne transilien r 19">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/balade-familiale-fontainebleau-rv" target="_blank" rel="noopener"><span class="num">19</span><span class="title">Balade familiale à Fontainebleau</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>12</b> km</span><span><b>110</b> m D+</span><span>3h00</span><span class="lvl">Accessible</span></div>
+<div class="route">Bois-le-Roi → Fontainebleau-Avon</div>
+<div class="lines"><span>Ligne R</span></div>
+<div class="meta">Transilien R · Seine-et-Marne</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Familles</span><span>Rando Navigo</span></div></li><li class="card" id="f20" data-n="20" data-km="27" data-dp="200" data-dept="Seine-et-Marne" data-lines="|R|TER|" data-f="day k20 navigo water" data-s="la seine au naturel montereau-fault-yonne vulaines-sur-seine-samoreau seine-et-marne transilien r ~1h ou ter 20">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/seine-naturel-rv" target="_blank" rel="noopener"><span class="num">20</span><span class="title">La Seine au naturel</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>27</b> km</span><span><b>200</b> m D+</span><span>n.c.</span><span class="lvl">Difficile</span></div>
+<div class="route">Montereau-Fault-Yonne → Vulaines-sur-Seine-Samoreau</div>
+<div class="lines"><span>Ligne R</span><span>TER</span></div>
+<div class="meta">Transilien R ~1h ou TER · Seine-et-Marne</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Rando Navigo</span></div></li><li class="card" id="f21" data-n="21" data-km="20" data-dp="110" data-dept="Seine-et-Marne" data-lines="|R|" data-f="day k20 navigo water" data-s="fontainebleau entre eau et foret montigny-sur-loing thomery seine-et-marne transilien r 21">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/fontainebleau-eau-foret-rv" target="_blank" rel="noopener"><span class="num">21</span><span class="title">Fontainebleau entre eau et forêt</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>20</b> km</span><span><b>110</b> m D+</span><span>5h00</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Montigny-sur-Loing → Thomery</div>
+<div class="lines"><span>Ligne R</span></div>
+<div class="meta">Transilien R · Seine-et-Marne</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Rando Navigo</span></div></li><li class="card" id="f22" data-n="22" data-km="21" data-dp="280" data-dept="Seine-et-Marne" data-lines="|R|" data-f="day k20 loop navigo forest" data-s="le cœur sauvage de fontainebleau montigny-sur-loing montigny-sur-loing seine-et-marne transilien r (gare de lyon), retour r 22">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/cur-sauvage-fontainebleau-rv" target="_blank" rel="noopener"><span class="num">22</span><span class="title">Le cœur sauvage de Fontainebleau</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>21</b> km</span><span><b>280</b> m D+</span><span>5h45</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Montigny-sur-Loing → <em>boucle</em></div>
+<div class="lines"><span>Ligne R</span></div>
+<div class="meta">Transilien R (gare de Lyon), retour R · Seine-et-Marne</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Rando Navigo</span><span>Dénivelé à portée de main</span></div><div class="note">Détail : 21,5 km, 280 m D+, 280 m D-. 'tr' résumé depuis « Comment s'y rendre ».</div></li><li class="card" id="f23" data-n="23" data-km="27" data-dp="400" data-dept="Seine-et-Marne" data-lines="|R|TER|" data-f="day k20 dp300 navigo forest" data-s="l'auberge du cœur de la foret nemours bourron-marlotte-grez seine-et-marne transilien r (gare de lyon), retour r 23">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/lauberge-cur-foret-rv" target="_blank" rel="noopener"><span class="num">23</span><span class="title">L'auberge du cœur de la forêt</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>27</b> km</span><span><b>400</b> m D+</span><span>7h00</span><span class="lvl">Difficile</span></div>
+<div class="route">Nemours → Bourron-Marlotte-Grez</div>
+<div class="lines"><span>Ligne R</span><span>TER</span></div>
+<div class="meta">Transilien R (gare de Lyon), retour R · Seine-et-Marne</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Rando Navigo</span><span>Randonner pour manger</span></div><div class="note">Détail : 27 km, 400 m D+, 400 m D-. TER depuis Bercy cité en option (semaine uniquement) dans « Bon à savoir ». 'tr' résumé depuis « Comment s'y rendre ».</div></li><li class="card" id="f24" data-n="24" data-km="17" data-dp="150" data-dept="Seine-et-Marne" data-lines="|R|" data-f="day navigo forest" data-s="les trois mers de sable bagneaux-sur-loing nemours seine-et-marne transilien r (gare de lyon), retour r 24">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/trois-mers-sable-rv" target="_blank" rel="noopener"><span class="num">24</span><span class="title">Les trois mers de sable</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>17</b> km</span><span><b>150</b> m D+</span><span>4h15</span><span class="lvl">Accessible</span></div>
+<div class="route">Bagneaux-sur-Loing → Nemours</div>
+<div class="lines"><span>Ligne R</span></div>
+<div class="meta">Transilien R (gare de Lyon), retour R · Seine-et-Marne</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Rando Navigo</span><span>Dénivelé à portée de main</span></div><div class="note">En-tête 17 km mais bloc détail 16 km (150 m D+, D- non renseigné). 'tr' résumé depuis « Comment s'y rendre ».</div></li><li class="card" id="f25" data-n="25" data-km="16" data-dp="150" data-dept="Seine-et-Marne" data-lines="|R|" data-f="day water" data-s="chez les comtes du gatinais souppes-chateau-landon dordives seine-et-marne transilien r 25">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/comtes-gatinais-rv" target="_blank" rel="noopener"><span class="num">25</span><span class="title">Chez les comtes du Gâtinais</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>16</b> km</span><span><b>150</b> m D+</span><span>4h45</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Souppes-Château-Landon → Dordives</div>
+<div class="lines"><span>Ligne R</span></div>
+<div class="meta">Transilien R · Seine-et-Marne</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Champêtre</span><span>Culture &amp; Patrimoine</span></div></li><li class="card" id="f26" data-n="26" data-km="50" data-dp="500" data-dept="Seine-et-Marne" data-lines="|RER D|R|" data-f="multi k20 dp300 forest" data-s="traversee sud-nord de fontainebleau malesherbes bois-le-roi seine-et-marne rer d ~1h20, retour transilien r 26">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/traversee-sud-nord-fontainebleau-rv" target="_blank" rel="noopener"><span class="num">26</span><span class="title">Traversée sud-nord de Fontainebleau</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>50</b> km</span><span><b>500</b> m D+</span><span>2 jours</span><span class="lvl">Difficile</span></div>
+<div class="route">Malesherbes → Bois-le-Roi</div>
+<div class="lines"><span>RER D</span><span>Ligne R</span></div>
+<div class="meta">RER D ~1h20, retour Transilien R · Seine-et-Marne</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Dénivelé à portée de main</span></div></li><li class="card" id="f27" data-n="27" data-km="39" data-dp="380" data-dept="Seine-et-Marne" data-lines="|RER D|R|TER|" data-f="multi k20 dp300 navigo forest" data-s="traversee ouest-est de fontainebleau maisse fontainebleau-avon seine-et-marne rer d ~1h20, retour r ou ter 27">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/traversee-ouest-est-fontainebleau-rv" target="_blank" rel="noopener"><span class="num">27</span><span class="title">Traversée ouest-est de Fontainebleau</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>39</b> km</span><span><b>380</b> m D+</span><span>2 jours</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Maisse → Fontainebleau-Avon</div>
+<div class="lines"><span>RER D</span><span>Ligne R</span><span>TER</span></div>
+<div class="meta">RER D ~1h20, retour R ou TER · Seine-et-Marne</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Rando Navigo</span></div></li><li class="card" id="f28" data-n="28" data-km="17" data-dp="110" data-dept="Essonne" data-lines="|RER D|" data-f="day navigo water" data-s="et au milieu coule l'yerres combs-la-ville - quincy montgeron - crosne essonne rer d, retour rer d 28">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/milieu-coule-lyerres-rv" target="_blank" rel="noopener"><span class="num">28</span><span class="title">Et au milieu coule l'Yerres</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>17</b> km</span><span><b>110</b> m D+</span><span>4h30</span><span class="lvl">Accessible</span></div>
+<div class="route">Combs-la-Ville - Quincy → Montgeron - Crosne</div>
+<div class="lines"><span>RER D</span></div>
+<div class="meta">RER D, retour RER D · Essonne</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Culture &amp; Patrimoine</span><span>Rando Navigo</span></div><div class="note">Détail : 17,3 km, 110 m D+, 150 m D-. 'tr' résumé depuis « Comment s'y rendre ».</div></li><li class="card" id="f29" data-n="29" data-km="27" data-dp="280" data-dept="Essonne" data-lines="|RER D|" data-f="day k20 forest" data-s="la vallee amont de l'essonne malesherbes boutigny-sur-essonne essonne rer d ~1h30 29">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/vallee-amont-lessonne-rv" target="_blank" rel="noopener"><span class="num">29</span><span class="title">La vallée amont de l'Essonne</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>27</b> km</span><span><b>280</b> m D+</span><span>n.c.</span><span class="lvl">Difficile</span></div>
+<div class="route">Malesherbes → Boutigny-sur-Essonne</div>
+<div class="lines"><span>RER D</span></div>
+<div class="meta">RER D ~1h30 · Essonne</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Champêtre</span></div></li><li class="card" id="f30" data-n="30" data-km="21" data-dp="250" data-dept="Essonne" data-lines="|RER C|RER D|" data-f="day k20 navigo forest" data-s="trail de la juine a l’essonne etrechy boutigny-sur-essonne essonne rer c, retour rer d 30">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/trail-juigne-lessonne-rv" target="_blank" rel="noopener"><span class="num">30</span><span class="title">Trail de la Juine à l’Essonne</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>21</b> km</span><span><b>250</b> m D+</span><span>6h00</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Étréchy → Boutigny-sur-Essonne</div>
+<div class="lines"><span>RER C</span><span>RER D</span></div>
+<div class="meta">RER C, retour RER D · Essonne</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Dénivelé à portée de main</span><span>Rando Navigo</span></div><div class="note">Détail : 22 km, 270 m D+, 290 m D-. Pas de champ transport court sur la page : tr dérivé de « Comment s'y rendre ».</div></li><li class="card" id="f31" data-n="31" data-km="17" data-dp="270" data-dept="Essonne" data-lines="|RER D|RER C|" data-f="day navigo" data-s="a travers champs et forets la ferte-alais chamarande essonne rer d, retour rer c 31">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/travers-champs-forets-rv" target="_blank" rel="noopener"><span class="num">31</span><span class="title">À travers champs et forêts</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>17</b> km</span><span><b>270</b> m D+</span><span>4h45</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">La Ferté-Alais → Chamarande</div>
+<div class="lines"><span>RER D</span><span>RER C</span></div>
+<div class="meta">RER D, retour RER C · Essonne</div>
+<div class="tags"><span>Champêtre</span><span>Rando Navigo</span></div></li><li class="card" id="f32" data-n="32" data-km="22" data-dp="150" data-dept="Essonne" data-lines="|RER D|" data-f="day k20 navigo water" data-s="les marais de l'essonne corbeil-essonnes ballancourt essonne rer d, 45 min a 1h15 32">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/marais-lessonne-rv" target="_blank" rel="noopener"><span class="num">32</span><span class="title">Les marais de l'Essonne</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>22</b> km</span><span><b>150</b> m D+</span><span>5h45</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Corbeil-Essonnes → Ballancourt</div>
+<div class="lines"><span>RER D</span></div>
+<div class="meta">RER D, 45 min à 1h15 · Essonne</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Familles</span><span>Rando Navigo</span></div></li><li class="card" id="f33" data-n="33" data-km="20" data-dp="40" data-dept="Essonne" data-lines="|RER D|RER C|" data-f="day k20 navigo forest water" data-s="double plouf en foret de senart boussy-saint-antoine juvisy essonne rer d, retour rer d ou rer c 33">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/double-plouf-foret-senart-rv" target="_blank" rel="noopener"><span class="num">33</span><span class="title">Double plouf en forêt de Sénart</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>20</b> km</span><span><b>40</b> m D+</span><span>5h15</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Boussy-Saint-Antoine → Juvisy</div>
+<div class="lines"><span>RER D</span><span>RER C</span></div>
+<div class="meta">RER D, retour RER D ou RER C · Essonne</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Au cœur de la forêt</span><span>Rando Navigo</span></div><div class="note">Détail : 20,4 km, 40 m D+, 80 m D-. tr dérivé de « Comment s'y rendre ».</div></li><li class="card" id="f34" data-n="34" data-km="21" data-dp="280" data-dept="Essonne" data-lines="|RER C|" data-f="day k20 navigo" data-s="le grand air du hurepoix chamarande saint-cheron essonne rer c, retour rer c 34">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/grand-air-hurepoix-rv" target="_blank" rel="noopener"><span class="num">34</span><span class="title">Le grand air du Hurepoix</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>21</b> km</span><span><b>280</b> m D+</span><span>5h45</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Chamarande → Saint-Chéron</div>
+<div class="lines"><span>RER C</span></div>
+<div class="meta">RER C, retour RER C · Essonne</div>
+<div class="tags"><span>Champêtre</span><span>Rando Navigo</span></div><div class="note">Détail : 21,6 km, 280 m D+, 300 m D-. Pas de ravitaillement sur le chemin. tr dérivé de « Comment s'y rendre ».</div></li><li class="card" id="f35" data-n="35" data-km="21" data-dp="250" data-dept="Essonne" data-lines="|RER C|" data-f="day k20 navigo water" data-s="la douce vallee de l’orge breuillet - bruyeres-le-chatel dourdan essonne rer c, retour rer c (dourdan ou dourdan-la-foret) 35">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/douce-vallee-lorge-rv" target="_blank" rel="noopener"><span class="num">35</span><span class="title">La douce vallée de l’Orge</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>21</b> km</span><span><b>250</b> m D+</span><span>5h45</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Breuillet - Bruyères-le-Châtel → Dourdan</div>
+<div class="lines"><span>RER C</span></div>
+<div class="meta">RER C, retour RER C (Dourdan ou Dourdan-la-Forêt) · Essonne</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Champêtre</span><span>Rando Navigo</span></div><div class="note">Détail : 21,6 km, 240 m D+, 180 m D-. Plusieurs gares sur le parcours pour écourter. tr dérivé de « Comment s'y rendre ».</div></li><li class="card" id="f36" data-n="36" data-km="39" data-dp="350" data-dept="Essonne" data-lines="|TER|RER C|" data-f="multi k20 dp300 navigo" data-s="la vallee oubliee de la juine angerville etampes essonne ter, retour ter ou rer c 36">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/beauce-gatinais-2-jours-rv" target="_blank" rel="noopener"><span class="num">36</span><span class="title">La Vallée oubliée de la Juine</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>39</b> km</span><span><b>350</b> m D+</span><span>2 jours</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Angerville → Étampes</div>
+<div class="lines"><span>TER</span><span>RER C</span></div>
+<div class="meta">TER, retour TER ou RER C · Essonne</div>
+<div class="tags"><span>Champêtre</span><span>Rando Navigo</span></div></li><li class="card" id="f37" data-n="37" data-km="29" data-dp="270" data-dept="Essonne" data-lines="|RER C|" data-f="day k20 navigo" data-s="la louette, je m'y promenerai saint-martin-d'etampes dourdan essonne rer c 37">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/louette-my-promenerai-rv" target="_blank" rel="noopener"><span class="num">37</span><span class="title">La Louette, je m'y promènerai</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>29</b> km</span><span><b>270</b> m D+</span><span>7h30</span><span class="lvl">Difficile</span></div>
+<div class="route">Saint-Martin-d'Étampes → Dourdan</div>
+<div class="lines"><span>RER C</span></div>
+<div class="meta">RER C · Essonne</div>
+<div class="tags"><span>Champêtre</span><span>Rando Navigo</span></div></li><li class="card" id="f38" data-n="38" data-km="40" data-dp="400" data-dept="Essonne" data-lines="|RER C|" data-f="multi k20 dp300 loop navigo forest water" data-s="week-end buissonnier a rambouillet dourdan dourdan essonne rer c ~1h20 38">
+<a class="hit" href="https://www.rectoverso.co/fiches/week-end-buissonnier-a-rambouillet" target="_blank" rel="noopener"><span class="num">38</span><span class="title">Week-end buissonnier à Rambouillet</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>40</b> km</span><span><b>400</b> m D+</span><span>2 jours</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Dourdan → <em>boucle</em></div>
+<div class="lines"><span>RER C</span></div>
+<div class="meta">RER C ~1h20 · Essonne</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Au cœur de la forêt</span><span>Rando Navigo</span></div><div class="note">Le corps de la fiche indique 20 km et 100 m D+.</div></li><li class="card" id="f39" data-n="39" data-km="20" data-dp="190" data-dept="Essonne" data-lines="|RER C|N|RER B|" data-f="day k20 navigo" data-s="saclay sur un plateau versailles-chantiers palaiseau essonne rer c ou n, retour rer b 39">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/saclay-plateau-rv" target="_blank" rel="noopener"><span class="num">39</span><span class="title">Saclay sur un plateau</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>20</b> km</span><span><b>190</b> m D+</span><span>5h30</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Versailles-Chantiers → Palaiseau</div>
+<div class="lines"><span>RER C</span><span>Ligne N</span><span>RER B</span></div>
+<div class="meta">RER C ou N, retour RER B · Essonne</div>
+<div class="tags"><span>Champêtre</span><span>Rando Navigo</span><span>Randonner pour manger</span></div></li><li class="card" id="f40" data-n="40" data-km="13" data-dp="200" data-dept="Essonne" data-lines="|RER B|" data-f="day navigo forest" data-s="l’everest francilien bures-sur-yvette courcelle-sur-yvette essonne rer b, retour rer b 40">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/leverest-francilien-rv" target="_blank" rel="noopener"><span class="num">40</span><span class="title">L’Everest francilien</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>13</b> km</span><span><b>200</b> m D+</span><span>3h30</span><span class="lvl">Accessible</span></div>
+<div class="route">Bures-sur-Yvette → Courcelle-sur-Yvette</div>
+<div class="lines"><span>RER B</span></div>
+<div class="meta">RER B, retour RER B · Essonne</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Culture &amp; Patrimoine</span><span>Rando Navigo</span></div><div class="note">Détail : 13 km, 170 m D+, 180 m D-. tr dérivé de « Comment s'y rendre ».</div></li><li class="card" id="f41" data-n="41" data-km="19" data-dp="200" data-dept="Yvelines" data-lines="|N|U|RER B|" data-f="day navigo forest" data-s="port-royal des champs la verriere saint-remy-les-chevreuse yvelines transilien n ou u, retour rer b 41">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/port-royal-champs-rv" target="_blank" rel="noopener"><span class="num">41</span><span class="title">Port-Royal des champs</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>19</b> km</span><span><b>200</b> m D+</span><span>5h15</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">La Verrière → Saint-Rémy-lès-Chevreuse</div>
+<div class="lines"><span>Ligne N</span><span>Ligne U</span><span>RER B</span></div>
+<div class="meta">Transilien N ou U, retour RER B · Yvelines</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Culture &amp; Patrimoine</span><span>Rando Navigo</span></div></li><li class="card" id="f42" data-n="42" data-km="21" data-dp="500" data-dept="Yvelines" data-lines="|RER B|" data-f="day k20 dp300 navigo forest" data-s="la vallee perdue de la merantaise bures-sur-yvette courcelle-sur-yvette yvelines rer b 42">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/vallee-perdue-merantaise-rv" target="_blank" rel="noopener"><span class="num">42</span><span class="title">La vallée perdue de la Mérantaise</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>21</b> km</span><span><b>500</b> m D+</span><span>6h00</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Bures-sur-Yvette → Courcelle-sur-Yvette</div>
+<div class="lines"><span>RER B</span></div>
+<div class="meta">RER B · Yvelines</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Dénivelé à portée de main</span><span>Rando Navigo</span></div></li><li class="card" id="f43" data-n="43" data-km="28" data-dp="350" data-dept="Yvelines" data-lines="|N|RER B|" data-f="multi k20 dp300 navigo forest" data-s="l'autre vallee des merveilles le perray-en-yvelines saint-remy-les-chevreuse yvelines transilien n, retour rer b 43">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/lautre-vallee-merveilles-rv" target="_blank" rel="noopener"><span class="num">43</span><span class="title">L'autre vallée des merveilles</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>28</b> km</span><span><b>350</b> m D+</span><span>2 jours</span><span class="lvl">Accessible</span></div>
+<div class="route">Le Perray-en-Yvelines → Saint-Rémy-lès-Chevreuse</div>
+<div class="lines"><span>Ligne N</span><span>RER B</span></div>
+<div class="meta">Transilien N, retour RER B · Yvelines</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Culture &amp; Patrimoine</span><span>Rando Navigo</span></div></li><li class="card" id="f44" data-n="44" data-km="21" data-dp="200" data-dept="Yvelines" data-lines="|N|" data-f="day k20 loop navigo forest water" data-s="le chaos des vaux-de-cernay le perray-en-yvelines le perray-en-yvelines yvelines transilien n, 45 min a 1h 44">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/chaos-vaux-cernay-rv" target="_blank" rel="noopener"><span class="num">44</span><span class="title">Le chaos des Vaux-de-Cernay</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>21</b> km</span><span><b>200</b> m D+</span><span>6h00</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Le Perray-en-Yvelines → <em>boucle</em></div>
+<div class="lines"><span>Ligne N</span></div>
+<div class="meta">Transilien N, 45 min à 1h · Yvelines</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Au cœur de la forêt</span><span>Rando Navigo</span></div></li><li class="card" id="f45" data-n="45" data-km="25" data-dp="170" data-dept="Yvelines" data-lines="|N|TER|" data-f="day k20 navigo forest" data-s="trail costaud en foret de rambouillet rambouillet le perray-en-yvelines yvelines transilien n ou ter 45">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/trail-costaud-foret-rambouillet-rv" target="_blank" rel="noopener"><span class="num">45</span><span class="title">Trail costaud en forêt de Rambouillet</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>25</b> km</span><span><b>170</b> m D+</span><span>6h30</span><span class="lvl">Difficile</span></div>
+<div class="route">Rambouillet → Le Perray-en-Yvelines</div>
+<div class="lines"><span>Ligne N</span><span>TER</span></div>
+<div class="meta">Transilien N ou TER · Yvelines</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Rando Navigo</span></div></li><li class="card" id="f46" data-n="46" data-km="17" data-dp="40" data-dept="Yvelines" data-lines="|N|TER|" data-f="day navigo forest" data-s="la petite scandinavie de rambouillet le perray rambouillet yvelines transilien n, retour n ou ter 46">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/petite-scandinavie-rambouillet-rv" target="_blank" rel="noopener"><span class="num">46</span><span class="title">La petite Scandinavie de Rambouillet</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>17</b> km</span><span><b>40</b> m D+</span><span>4h30</span><span class="lvl">Accessible</span></div>
+<div class="route">Le Perray → Rambouillet</div>
+<div class="lines"><span>Ligne N</span><span>TER</span></div>
+<div class="meta">Transilien N, retour N ou TER · Yvelines</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Rando Navigo</span><span>Randonner pour manger</span></div><div class="note">Détail : 17,5 km, 40 m D+, 50 m D-. tr dérivé de « Comment s'y rendre ».</div></li><li class="card" id="f47" data-n="47" data-km="24" data-dp="180" data-dept="Yvelines" data-lines="|RER C|N|TER|" data-f="day k20 navigo forest" data-s="marche a l'ombre de dourdan a rambouillet dourdan rambouillet yvelines rer c, retour transilien n ou ter 47">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/marche-lombre-dourdan-rambouillet-rv" target="_blank" rel="noopener"><span class="num">47</span><span class="title">Marche à l'ombre de Dourdan à Rambouillet</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>24</b> km</span><span><b>180</b> m D+</span><span>6h30</span><span class="lvl">Difficile</span></div>
+<div class="route">Dourdan → Rambouillet</div>
+<div class="lines"><span>RER C</span><span>Ligne N</span><span>TER</span></div>
+<div class="meta">RER C, retour Transilien N ou TER · Yvelines</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Culture &amp; Patrimoine</span><span>Rando Navigo</span></div><div class="note">Détail fiche : Dourdan → Rambouillet 24,2 km, 180 m D+ / 140 m D-. Aucune gare intermédiaire. Trouvée via recherche web (slug non déductible du nom GPX).</div></li><li class="card" id="f48" data-n="48" data-km="27" data-dp="300" data-dept="Yvelines" data-lines="|N|" data-f="day k20 dp300 navigo forest" data-s="bain de foret royale orgerus-behoust montfort-l'amaury-mere yvelines transilien n, ~45 min 48">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/bain-foret-royale-rv" target="_blank" rel="noopener"><span class="num">48</span><span class="title">Bain de forêt royale</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>27</b> km</span><span><b>300</b> m D+</span><span>7h00</span><span class="lvl">Difficile</span></div>
+<div class="route">Orgerus-Béhoust → Montfort-l'Amaury-Méré</div>
+<div class="lines"><span>Ligne N</span></div>
+<div class="meta">Transilien N, ~45 min · Yvelines</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Champêtre</span><span>Rando Navigo</span></div></li><li class="card" id="f49" data-n="49" data-km="19" data-dp="80" data-dept="Yvelines" data-lines="|RER A|J|L|" data-f="day navigo forest" data-s="de saint-germain a conflans par les bois saint-germain-en-laye conflans-sainte-honorine yvelines rer a, retour j (ou rer a / l a conflans-fin-d'oise) 49">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/saint-germain-conflans-bois-rv" target="_blank" rel="noopener"><span class="num">49</span><span class="title">De Saint-Germain à Conflans par les bois</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>19</b> km</span><span><b>80</b> m D+</span><span>5h00</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Saint-Germain-en-Laye → Conflans-Sainte-Honorine</div>
+<div class="lines"><span>RER A</span><span>Ligne J</span><span>Ligne L</span></div>
+<div class="meta">RER A, retour J (ou RER A / L à Conflans-Fin-d'Oise) · Yvelines</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Rando Navigo</span></div><div class="note">Détail fiche : Saint-Germain-en-Laye → Conflans-Sainte-Honorine 19,2 km, 80 m D+ / 120 m D-. Trouvée via recherche web.</div></li><li class="card" id="f50" data-n="50" data-km="18" data-dp="110" data-dept="Yvelines" data-lines="|L|N|" data-f="day navigo forest" data-s="au cœur de la foret de marly saint-nom-la-breteche mareil-sur-mauldre yvelines transilien l, retour n 50">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/cur-foret-marly-rv" target="_blank" rel="noopener"><span class="num">50</span><span class="title">Au cœur de la forêt de Marly</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>18</b> km</span><span><b>110</b> m D+</span><span>4h45</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Saint-Nom-la-Bretèche → Mareil-sur-Mauldre</div>
+<div class="lines"><span>Ligne L</span><span>Ligne N</span></div>
+<div class="meta">Transilien L, retour N · Yvelines</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Rando Navigo</span></div></li><li class="card" id="f51" data-n="51" data-km="23" data-dp="320" data-dept="Yvelines" data-lines="|J|N|" data-f="day k20 dp300 navigo" data-s="rando &amp; chocolats mantes-la-jolie (gare mantes-station) maule yvelines transilien j, retour n 51">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/rando-chocolats-rv" target="_blank" rel="noopener"><span class="num">51</span><span class="title">Rando &amp; chocolats</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>23</b> km</span><span><b>320</b> m D+</span><span>6h00</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Mantes-la-Jolie (gare Mantes-Station) → Maule</div>
+<div class="lines"><span>Ligne J</span><span>Ligne N</span></div>
+<div class="meta">Transilien J, retour N · Yvelines</div>
+<div class="tags"><span>Champêtre</span><span>Rando Navigo</span><span>Randonner pour manger</span></div><div class="note">Sens de la fiche : Mantes-la-Jolie → Maule 22,7 km, 320 m D+ / 320 m D- (inverse du nom de travail GPX « Maule à Mantes-la-Jolie »). Départ à la gare Mantes-Station, pas Mantes-la-Jolie. Trouvée via recherche web.</div></li><li class="card" id="f52" data-n="52" data-km="25" data-dp="300" data-dept="Yvelines" data-lines="|J|N|" data-f="day k20 dp300 navigo water" data-s="la vallee de la vaucouleurs mantes-station tacoignieres-richebourg yvelines transilien j, retour n 52">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/fee-vaucouleurs-rv" target="_blank" rel="noopener"><span class="num">52</span><span class="title">La vallée de la Vaucouleurs</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>25</b> km</span><span><b>300</b> m D+</span><span>6h30</span><span class="lvl">Difficile</span></div>
+<div class="route">Mantes-Station → Tacoignières-Richebourg</div>
+<div class="lines"><span>Ligne J</span><span>Ligne N</span></div>
+<div class="meta">Transilien J, retour N · Yvelines</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Champêtre</span><span>Rando Navigo</span></div></li><li class="card" id="f53" data-n="53" data-km="25" data-dp="480" data-dept="Yvelines" data-lines="|J|" data-f="day k20 dp300" data-s="champs et chateaux du vexin meulan-hardricourt juziers yvelines transilien j 53">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/champs-chateaux-vexin-rv" target="_blank" rel="noopener"><span class="num">53</span><span class="title">Champs et châteaux du Vexin</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>25</b> km</span><span><b>480</b> m D+</span><span>7h00</span><span class="lvl">Difficile</span></div>
+<div class="route">Meulan-Hardricourt → Juziers</div>
+<div class="lines"><span>Ligne J</span></div>
+<div class="meta">Transilien J · Yvelines</div>
+<div class="tags"><span>Champêtre</span><span>Dénivelé à portée de main</span></div></li><li class="card" id="f54" data-n="54" data-km="40" data-dp="700" data-dept="Yvelines" data-lines="|J|TER|" data-f="multi k20 dp300 water" data-s="le chemin de crete de la seine mantes-la-jolie bonnieres-sur-seine yvelines transilien j ou ter, retour train depuis bonnieres-sur-seine (ligne non nommee sur la fiche) 54">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/chemin-crete-seine-rv" target="_blank" rel="noopener"><span class="num">54</span><span class="title">Le chemin de crête de la Seine</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>40</b> km</span><span><b>700</b> m D+</span><span>2 jours</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Mantes-la-Jolie → Bonnières-sur-Seine</div>
+<div class="lines"><span>Ligne J</span><span>TER</span></div>
+<div class="meta">Transilien J ou TER, retour train depuis Bonnières-sur-Seine (ligne non nommée sur la fiche) · Yvelines</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Culture &amp; Patrimoine</span><span>Dénivelé à portée de main</span></div><div class="note">2 jours : J1 Mantes-la-Jolie → Vétheuil 19,2 km, 290 m D+ / 310 m D- ; J2 Vétheuil → Bonnières-sur-Seine 20,6 km, 310 m D+ / 310 m D-. Pas de tag Rando Navigo mais la fiche dit que le Pass Navigo est valable aux deux gares. Trouvée via recherche web.</div></li><li class="card" id="f55" data-n="55" data-km="14" data-dp="230" data-dept="Yvelines" data-lines="|J|TER|Bus/car|" data-f="day navigo" data-s="grottes et donjons de la seine haute-isle (chantemesle) bonnieres-sur-seine yvelines train jusqu'a mantes + bus 95-11 55">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/grottes-donjons-seine-rv" target="_blank" rel="noopener"><span class="num">55</span><span class="title">Grottes et donjons de la Seine</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>14</b> km</span><span><b>230</b> m D+</span><span>4h00</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Haute-Isle (Chantemesle) → Bonnières-sur-Seine</div>
+<div class="lines"><span>Ligne J</span><span>TER</span><span>Bus/car</span></div>
+<div class="meta">Train jusqu'à Mantes + bus 95-11 · Yvelines</div>
+<div class="tags"><span>Culture &amp; Patrimoine</span><span>Dénivelé à portée de main</span><span>Rando Navigo</span></div></li><li class="card" id="f56" data-n="56" data-km="17" data-dp="210" data-dept="Oise" data-lines="|J|" data-f="day" data-s="le petit marais poitevin du vexin chaumont-en-vexin lavilletertre oise ligne j ~1h10, hors navigo 56">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/petit-marais-poitevin-vexin-rv" target="_blank" rel="noopener"><span class="num">56</span><span class="title">Le petit marais poitevin du Vexin</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>17</b> km</span><span><b>210</b> m D+</span><span>4h30</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Chaumont-en-Vexin → Lavilletertre</div>
+<div class="lines"><span>Ligne J</span></div>
+<div class="meta">Ligne J ~1h10, hors Navigo · Oise</div>
+<div class="tags"><span>Champêtre</span><span>Culture &amp; Patrimoine</span></div></li><li class="card" id="f57" data-n="57" data-km="47" data-dp="460" data-dept="Val-d'Oise" data-lines="|J|" data-f="multi k20 dp300 navigo" data-s="un petit tour dans le vexin chars mantes-la-jolie val-d'oise ligne j ~55 min 57">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/petit-tour-vexin-rv" target="_blank" rel="noopener"><span class="num">57</span><span class="title">Un petit tour dans le Vexin</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>47</b> km</span><span><b>460</b> m D+</span><span>2 jours</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Chars → Mantes-la-Jolie</div>
+<div class="lines"><span>Ligne J</span></div>
+<div class="meta">Ligne J ~55 min · Val-d'Oise</div>
+<div class="tags"><span>Champêtre</span><span>Rando Navigo</span></div></li><li class="card" id="f58" data-n="58" data-km="17" data-dp="170" data-dept="Val-d'Oise" data-lines="|J|" data-f="day navigo water" data-s="vallee et marais de la viosne boissy-l'aillerie chars val-d'oise transilien j 58">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/vallee-marais-viosne-rv" target="_blank" rel="noopener"><span class="num">58</span><span class="title">Vallée et marais de la Viosne</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>17</b> km</span><span><b>170</b> m D+</span><span>4h30</span><span class="lvl">Accessible</span></div>
+<div class="route">Boissy-l'Aillerie → Chars</div>
+<div class="lines"><span>Ligne J</span></div>
+<div class="meta">Transilien J · Val-d'Oise</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Rando Navigo</span></div></li><li class="card" id="f59" data-n="59" data-km="24" data-dp="300" data-dept="Val-d'Oise" data-lines="|J|" data-f="day k20 dp300 navigo" data-s="champs libres dans le vexin us vaux-sur-seine val-d'oise transilien j, retour j (autre branche) 59">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/champs-libres-vexin-rv" target="_blank" rel="noopener"><span class="num">59</span><span class="title">Champs libres dans le Vexin</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>24</b> km</span><span><b>300</b> m D+</span><span>6h30</span><span class="lvl">Difficile</span></div>
+<div class="route">Us → Vaux-sur-Seine</div>
+<div class="lines"><span>Ligne J</span></div>
+<div class="meta">Transilien J, retour J (autre branche) · Val-d'Oise</div>
+<div class="tags"><span>Champêtre</span><span>Culture &amp; Patrimoine</span><span>Rando Navigo</span></div><div class="note">Détail fiche : Us → Vaux-sur-Seine 22,8 km, 300 m D+ / 300 m D-. Trouvée via recherche web.</div></li><li class="card" id="f60" data-n="60" data-km="15" data-dp="200" data-dept="Val-d'Oise" data-lines="|RER A|L|J|" data-f="day navigo" data-s="la cle des champs de cergy cergy-le-haut maurecourt val-d'oise rer a ou l, retour j 60">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/cle-champs-cergy-rv" target="_blank" rel="noopener"><span class="num">60</span><span class="title">La clé des champs de Cergy</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>15</b> km</span><span><b>200</b> m D+</span><span>4h00</span><span class="lvl">Accessible</span></div>
+<div class="route">Cergy-le-Haut → Maurecourt</div>
+<div class="lines"><span>RER A</span><span>Ligne L</span><span>Ligne J</span></div>
+<div class="meta">RER A ou L, retour J · Val-d'Oise</div>
+<div class="tags"><span>Champêtre</span><span>Familles</span><span>Rando Navigo</span></div></li><li class="card" id="f61" data-n="61" data-km="15" data-dp="200" data-dept="Val-d'Oise" data-lines="|RER A|L|" data-f="day loop navigo" data-s="randonnee spectaculaire a cergy cergy-saint-christophe cergy-saint-christophe val-d'oise rer a ou l ~50 min 61">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/randonnee-spectaculaire-cergy-rv" target="_blank" rel="noopener"><span class="num">61</span><span class="title">Randonnée spectaculaire à Cergy</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>15</b> km</span><span><b>200</b> m D+</span><span>4h30</span><span class="lvl">Accessible</span></div>
+<div class="route">Cergy-Saint-Christophe → <em>boucle</em></div>
+<div class="lines"><span>RER A</span><span>Ligne L</span></div>
+<div class="meta">RER A ou L ~50 min · Val-d'Oise</div>
+<div class="tags"><span>Champêtre</span><span>Familles</span><span>Rando Navigo</span></div></li><li class="card" id="f62" data-n="62" data-km="15" data-dp="230" data-dept="Val-d'Oise" data-lines="|H|" data-f="day navigo forest" data-s="traversee de la foret de montmorency taverny saint-leu-la-foret val-d'oise ligne h ~30 min 62">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/traversee-foret-montmorency-rv" target="_blank" rel="noopener"><span class="num">62</span><span class="title">Traversée de la forêt de Montmorency</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>15</b> km</span><span><b>230</b> m D+</span><span>4h00</span><span class="lvl">Accessible</span></div>
+<div class="route">Taverny → Saint-Leu-la-Forêt</div>
+<div class="lines"><span>Ligne H</span></div>
+<div class="meta">Ligne H ~30 min · Val-d'Oise</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Familles</span><span>Rando Navigo</span></div></li><li class="card" id="f63" data-n="63" data-km="20" data-dp="280" data-dept="Val-d'Oise" data-lines="|J|" data-f="day k20 navigo" data-s="la plus belle vue sur paris ? sannois conflans-sainte-honorine val-d'oise transilien j 63">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/plus-belle-vue-paris-rv" target="_blank" rel="noopener"><span class="num">63</span><span class="title">La plus belle vue sur Paris ?</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>20</b> km</span><span><b>280</b> m D+</span><span>5h30</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Sannois → Conflans-Sainte-Honorine</div>
+<div class="lines"><span>Ligne J</span></div>
+<div class="meta">Transilien J · Val-d'Oise</div>
+<div class="tags"><span>Culture &amp; Patrimoine</span><span>Rando Navigo</span></div></li><li class="card" id="f64" data-n="64" data-km="11" data-dp="170" data-dept="Val-d'Oise" data-lines="|RER C|J|H|" data-f="day navigo" data-s="balade dans un tableau pontoise auvers-sur-oise val-d'oise rer c, j ou h, retour h 64">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/balade-tableau-rv" target="_blank" rel="noopener"><span class="num">64</span><span class="title">Balade dans un tableau</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>11</b> km</span><span><b>170</b> m D+</span><span>3h00</span><span class="lvl">Accessible</span></div>
+<div class="route">Pontoise → Auvers-sur-Oise</div>
+<div class="lines"><span>RER C</span><span>Ligne J</span><span>Ligne H</span></div>
+<div class="meta">RER C, J ou H, retour H · Val-d'Oise</div>
+<div class="tags"><span>Culture &amp; Patrimoine</span><span>Rando Navigo</span></div></li><li class="card" id="f65" data-n="65" data-km="23" data-dp="270" data-dept="Val-d'Oise" data-lines="|H|" data-f="day k20 navigo" data-s="les vallees de l'oise et du sausseron auvers-sur-oise meriel val-d'oise transilien h 65">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/vallees-loise-sausseron-rv" target="_blank" rel="noopener"><span class="num">65</span><span class="title">Les vallées de l'Oise et du Sausseron</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>23</b> km</span><span><b>270</b> m D+</span><span>6h00</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Auvers-sur-Oise → Mériel</div>
+<div class="lines"><span>Ligne H</span></div>
+<div class="meta">Transilien H · Val-d'Oise</div>
+<div class="tags"><span>Champêtre</span><span>Culture &amp; Patrimoine</span><span>Rando Navigo</span></div></li><li class="card" id="f66" data-n="66" data-km="20" data-dp="300" data-dept="Val-d'Oise" data-lines="|H|" data-f="day k20 dp300 loop navigo forest" data-s="sur les traces du vexin prehistorique champagne-sur-oise champagne-sur-oise val-d'oise transilien h, retour h 66">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/traces-vexin-prehistorique-rv" target="_blank" rel="noopener"><span class="num">66</span><span class="title">Sur les traces du Vexin préhistorique</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>20</b> km</span><span><b>300</b> m D+</span><span>5h30</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Champagne-sur-Oise → <em>boucle</em></div>
+<div class="lines"><span>Ligne H</span></div>
+<div class="meta">Transilien H, retour H · Val-d'Oise</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Dénivelé à portée de main</span><span>Rando Navigo</span></div><div class="note">Boucle : Champagne-sur-Oise → Champagne-sur-Oise 20 km, 300 m D+ / 300 m D-. Pas de ravitaillement sur le parcours. Trouvée via recherche web.</div></li><li class="card" id="f67" data-n="67" data-km="24" data-dp="440" data-dept="Val-d'Oise" data-lines="|H|" data-f="day k20 dp300" data-s="les forets perchees du val-d'oise l'isle-adam-parmain viarmes val-d'oise transilien h 67">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/forets-perchees-val-doise-rv" target="_blank" rel="noopener"><span class="num">67</span><span class="title">Les forêts perchées du Val-d'Oise</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>24</b> km</span><span><b>440</b> m D+</span><span>6h45</span><span class="lvl">Difficile</span></div>
+<div class="route">L'Isle-Adam-Parmain → Viarmes</div>
+<div class="lines"><span>Ligne H</span></div>
+<div class="meta">Transilien H · Val-d'Oise</div>
+<div class="note">Thèmes non relevés.</div></li><li class="card" id="f68" data-n="68" data-km="14" data-dp="280" data-dept="Val-d'Oise" data-lines="|H|" data-f="day loop navigo forest" data-s="pique-nique au bord de l'eau a viarmes viarmes viarmes val-d'oise ligne h ~40 min 68">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/pique-nique-bord-leau-viarmes-rv" target="_blank" rel="noopener"><span class="num">68</span><span class="title">Pique-nique au bord de l'eau à Viarmes</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>14</b> km</span><span><b>280</b> m D+</span><span>4h00</span><span class="lvl">Accessible</span></div>
+<div class="route">Viarmes → <em>boucle</em></div>
+<div class="lines"><span>Ligne H</span></div>
+<div class="meta">Ligne H ~40 min · Val-d'Oise</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Familles</span><span>Rando Navigo</span></div></li><li class="card" id="f69" data-n="69" data-km="21" data-dp="170" data-dept="Val-d'Oise" data-lines="|RER D|H|" data-f="day k20 navigo forest" data-s="le bout du monde a royaumont survilliers-fosses viarmes val-d'oise rer d ~40 min, retour h 69">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/bout-monde-royaumont-rv" target="_blank" rel="noopener"><span class="num">69</span><span class="title">Le bout du monde à Royaumont</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>21</b> km</span><span><b>170</b> m D+</span><span>5h45</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Survilliers-Fosses → Viarmes</div>
+<div class="lines"><span>RER D</span><span>Ligne H</span></div>
+<div class="meta">RER D ~40 min, retour H · Val-d'Oise</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Culture &amp; Patrimoine</span><span>Rando Navigo</span></div></li><li class="card" id="f70" data-n="70" data-km="15" data-dp="180" data-dept="Val-d'Oise" data-lines="|H|" data-f="day loop navigo" data-s="le bourg hors-du-temps luzarches luzarches val-d'oise transilien h 70">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/bourg-hors-temps-rv" target="_blank" rel="noopener"><span class="num">70</span><span class="title">Le bourg hors-du-temps</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>15</b> km</span><span><b>180</b> m D+</span><span>4h00</span><span class="lvl">Accessible</span></div>
+<div class="route">Luzarches → <em>boucle</em></div>
+<div class="lines"><span>Ligne H</span></div>
+<div class="meta">Transilien H · Val-d'Oise</div>
+<div class="tags"><span>Champêtre</span><span>Familles</span><span>Rando Navigo</span></div></li><li class="card" id="f71" data-n="71" data-km="19" data-dp="160" data-dept="Oise" data-lines="|TER|RER D|" data-f="day loop forest" data-s="la creme de la foret orry-la-ville-coye orry-la-ville-coye oise ter ou rer d 71">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/creme-foret-rv" target="_blank" rel="noopener"><span class="num">71</span><span class="title">La crème de la forêt</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>19</b> km</span><span><b>160</b> m D+</span><span>5h00</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Orry-la-Ville-Coye → <em>boucle</em></div>
+<div class="lines"><span>TER</span><span>RER D</span></div>
+<div class="meta">TER ou RER D · Oise</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Randonner pour manger</span></div></li><li class="card" id="f72" data-n="72" data-km="18" data-dp="80" data-dept="Oise" data-lines="|TER|RER D|" data-f="day loop forest" data-s="delices de chantilly chantilly-gouvieux chantilly-gouvieux oise ter ou rer d 72">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/delices-chantilly-rv" target="_blank" rel="noopener"><span class="num">72</span><span class="title">Délices de Chantilly</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>18</b> km</span><span><b>80</b> m D+</span><span>4h30</span><span class="lvl">Accessible</span></div>
+<div class="route">Chantilly-Gouvieux → <em>boucle</em></div>
+<div class="lines"><span>TER</span><span>RER D</span></div>
+<div class="meta">TER ou RER D · Oise</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Culture &amp; Patrimoine</span><span>Randonner pour manger</span></div></li><li class="card" id="f73" data-n="73" data-km="36" data-dp="250" data-dept="Oise" data-lines="|TER|RER D|" data-f="multi k20 forest" data-s="a travers le pays de france chantilly pont-sainte-maxence oise ter ou rer d 73">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/travers-pays-france-rv" target="_blank" rel="noopener"><span class="num">73</span><span class="title">À travers le Pays de France</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>36</b> km</span><span><b>250</b> m D+</span><span>2 jours</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Chantilly → Pont-Sainte-Maxence</div>
+<div class="lines"><span>TER</span><span>RER D</span></div>
+<div class="meta">TER ou RER D · Oise</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Culture &amp; Patrimoine</span></div></li><li class="card" id="f74" data-n="74" data-km="15" data-dp="220" data-dept="Oise" data-lines="|TER|" data-f="day loop forest" data-s="sur le toit de l’oise pont-sainte-maxence pont-sainte-maxence oise ter depuis gare du nord (40-50 min), retour ter 74">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/toit-lile-france-rv" target="_blank" rel="noopener"><span class="num">74</span><span class="title">Sur le toit de l’Oise</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>15</b> km</span><span><b>220</b> m D+</span><span>4h00</span><span class="lvl">Accessible</span></div>
+<div class="route">Pont-Sainte-Maxence → <em>boucle</em></div>
+<div class="lines"><span>TER</span></div>
+<div class="meta">TER depuis gare du Nord (40-50 min), retour TER · Oise</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Dénivelé à portée de main</span><span>Familles</span></div><div class="note">Slug historique toit-lile-france (titre final « Sur le toit de l’Oise »). Détail étape : 15,6 km, 220 m D+ / 220 m D-. Hors zone IDF (billet SNCF).</div></li><li class="card" id="f75" data-n="75" data-km="46" data-dp="500" data-dept="Oise" data-lines="|TER|" data-f="multi k20 dp300 loop forest" data-s="nuit dans la foret des rois compiegne compiegne oise ter ~45 min 75">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/nuit-foret-rois-rv" target="_blank" rel="noopener"><span class="num">75</span><span class="title">Nuit dans la forêt des Rois</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>46</b> km</span><span><b>500</b> m D+</span><span>2 jours</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Compiègne → <em>boucle</em></div>
+<div class="lines"><span>TER</span></div>
+<div class="meta">TER ~45 min · Oise</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Culture &amp; Patrimoine</span><span>Dénivelé à portée de main</span></div></li><li class="card" id="f76" data-n="76" data-km="19" data-dp="190" data-dept="Oise" data-lines="|TER|K|" data-f="day loop" data-s="les vallees du valois crepy-en-valois crepy-en-valois oise ter ou transilien k 76">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/vallees-valois-rv" target="_blank" rel="noopener"><span class="num">76</span><span class="title">Les vallées du Valois</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>19</b> km</span><span><b>190</b> m D+</span><span>5h00</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Crépy-en-Valois → <em>boucle</em></div>
+<div class="lines"><span>TER</span><span>Ligne K</span></div>
+<div class="meta">TER ou Transilien K · Oise</div>
+<div class="tags"><span>Champêtre</span><span>Culture &amp; Patrimoine</span></div></li><li class="card" id="f77" data-n="77" data-km="55" data-dp="570" data-dept="Oise" data-lines="|TER|" data-f="multi k20 dp300" data-s="les roses du beauvaisis beauvais marseille-en-beauvaisis oise ter 77">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/roses-beauvaisis-rv" target="_blank" rel="noopener"><span class="num">77</span><span class="title">Les roses du Beauvaisis</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>55</b> km</span><span><b>570</b> m D+</span><span>3 jours</span><span class="lvl">Accessible</span></div>
+<div class="route">Beauvais → Marseille-en-Beauvaisis</div>
+<div class="lines"><span>TER</span></div>
+<div class="meta">TER · Oise</div>
+<div class="tags"><span>Champêtre</span><span>Culture &amp; Patrimoine</span></div></li><li class="card" id="f78" data-n="78" data-km="27" data-dp="450" data-dept="Aisne" data-lines="|P|TER|" data-f="day k20 dp300" data-s="sur les chemins blancs de champagne chateau-thierry nanteuil-saacy aisne p ou ter, retour p 78">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/chemins-blancs-champagne-rv" target="_blank" rel="noopener"><span class="num">78</span><span class="title">Sur les chemins blancs de Champagne</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>27</b> km</span><span><b>450</b> m D+</span><span>7h30</span><span class="lvl">Difficile</span></div>
+<div class="route">Château-Thierry → Nanteuil-Saâcy</div>
+<div class="lines"><span>Ligne P</span><span>TER</span></div>
+<div class="meta">P ou TER, retour P · Aisne</div>
+<div class="tags"><span>Champêtre</span><span>Dénivelé à portée de main</span><span>Randonner pour manger</span></div></li><li class="card" id="f79" data-n="79" data-km="12" data-dp="150" data-dept="Aisne" data-lines="|TER|" data-f="day loop forest" data-s="une foret d'histoires villers-cotterets villers-cotterets aisne ter 79">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/foret-dhistoires-rv" target="_blank" rel="noopener"><span class="num">79</span><span class="title">Une forêt d'histoires</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>12</b> km</span><span><b>150</b> m D+</span><span>3h30</span><span class="lvl">Accessible</span></div>
+<div class="route">Villers-Cotterêts → <em>boucle</em></div>
+<div class="lines"><span>TER</span></div>
+<div class="meta">TER · Aisne</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Culture &amp; Patrimoine</span></div></li><li class="card" id="f80" data-n="80" data-km="40" data-dp="700" data-dept="Marne" data-lines="|TER|" data-f="multi k20 dp300 loop" data-s="la belle autour de dormans dormans dormans marne ter ~1h 80">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/belle-autour-dormans-rv" target="_blank" rel="noopener"><span class="num">80</span><span class="title">La belle autour de Dormans</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>40</b> km</span><span><b>700</b> m D+</span><span>2 jours</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Dormans → <em>boucle</em></div>
+<div class="lines"><span>TER</span></div>
+<div class="meta">TER ~1h · Marne</div>
+<div class="tags"><span>Champêtre</span><span>Randonner pour manger</span></div></li><li class="card" id="f81" data-n="81" data-km="40" data-dp="600" data-dept="Marne" data-lines="||" data-f="multi k20 dp300" data-s="foret magique de champagne rilly-la-montagne avenay-val-d'or marne n.c. 81">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/foret-magique-champagne-rv" target="_blank" rel="noopener"><span class="num">81</span><span class="title">Forêt magique de Champagne</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>40</b> km</span><span><b>600</b> m D+</span><span>3 jours</span><span class="lvl">Accessible</span></div>
+<div class="route">Rilly-la-Montagne → Avenay-Val-d'Or</div>
+
+<div class="meta">n.c. · Marne</div>
+<div class="tags"><span>Champêtre</span><span>Randonner pour manger</span></div></li><li class="card" id="f82" data-n="82" data-km="39" data-dp="120" data-dept="Aube" data-lines="|TER|" data-f="multi k20 water" data-s="les plages du tres grand paris nogent-sur-seine romilly-sur-seine aube train paris-troyes 82">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/plages-tres-grand-paris-rv" target="_blank" rel="noopener"><span class="num">82</span><span class="title">Les plages du très Grand Paris</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>39</b> km</span><span><b>120</b> m D+</span><span>2 jours</span><span class="lvl">Accessible</span></div>
+<div class="route">Nogent-sur-Seine → Romilly-sur-Seine</div>
+<div class="lines"><span>TER</span></div>
+<div class="meta">Train Paris-Troyes · Aube</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Champêtre</span></div></li><li class="card" id="f83" data-n="83" data-km="49" data-dp="260" data-dept="Aube" data-lines="|TER|" data-f="multi k20 loop forest water" data-s="foret d'orient express vendeuvre-sur-barse vendeuvre-sur-barse aube ter 83">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/foret-dorient-express-rv" target="_blank" rel="noopener"><span class="num">83</span><span class="title">Forêt d'Orient express</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>49</b> km</span><span><b>260</b> m D+</span><span>2 jours</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Vendeuvre-sur-Barse → <em>boucle</em></div>
+<div class="lines"><span>TER</span></div>
+<div class="meta">TER · Aube</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Au cœur de la forêt</span></div></li><li class="card" id="f84" data-n="84" data-km="39" data-dp="700" data-dept="Aube" data-lines="|TER|" data-f="multi k20 dp300 loop" data-s="rando en etoile dans la cote des bar bar-sur-aube bar-sur-aube aube ter depuis gare de l’est (env. 2h), retour ter 84">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/rando-etoile-cote-bars-rv" target="_blank" rel="noopener"><span class="num">84</span><span class="title">Rando en étoile dans la côte des Bar</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>39</b> km</span><span><b>700</b> m D+</span><span>2 jours</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Bar-sur-Aube → <em>boucle</em></div>
+<div class="lines"><span>TER</span></div>
+<div class="meta">TER depuis gare de l’Est (env. 2h), retour TER · Aube</div>
+<div class="tags"><span>Culture &amp; Patrimoine</span><span>Dénivelé à portée de main</span><span>Randonner pour manger</span></div><div class="note">Deux boucles au départ de Bar-sur-Aube : J1 18 km (340/330), J2 21 km (430/440). Slug avec « bars ».</div></li><li class="card" id="f85" data-n="85" data-km="60" data-dp="1100" data-dept="Yonne" data-lines="|TER|" data-f="multi k20 dp300 water" data-s="la petite dordogne de l’yonne champs - saint-bris (champs-sur-yonne) sermizelles-vezelay yonne ter depuis paris bercy via laroche-migennes (env. 2h), retour ter direct (2h20) ou avec correspondance 85">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/petite-dordogne-lyonne-rv" target="_blank" rel="noopener"><span class="num">85</span><span class="title">La petite Dordogne de l’Yonne</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>60</b> km</span><span><b>1100</b> m D+</span><span>3 jours</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Champs - Saint-Bris (Champs-sur-Yonne) → Sermizelles-Vézelay</div>
+<div class="lines"><span>TER</span></div>
+<div class="meta">TER depuis Paris Bercy via Laroche-Migennes (env. 2h), retour TER direct (2h20) ou avec correspondance · Yonne</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Bivouac</span><span>Champêtre</span></div><div class="note">Étapes : Champs-sur-Yonne → Vermenton 20 km (420/400) ; Vermenton → Saint-Moré ; Saint-Moré → gare de Sermizelles-Vézelay 23,5 km (460/450).</div></li><li class="card" id="f86" data-n="86" data-km="73" data-dp="1730" data-dept="Yonne" data-lines="|TER|" data-f="multi k20 dp300 loop forest" data-s="50 nuances de vert dans le morvan avallon avallon yonne ter via sermizelles 86">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/50-nuances-vert-morvan-rv" target="_blank" rel="noopener"><span class="num">86</span><span class="title">50 nuances de vert dans le Morvan</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>73</b> km</span><span><b>1730</b> m D+</span><span>3 jours</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Avallon → <em>boucle</em></div>
+<div class="lines"><span>TER</span></div>
+<div class="meta">TER via Sermizelles · Yonne</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Bivouac</span></div></li><li class="card" id="f87" data-n="87" data-km="129" data-dp="2970" data-dept="Yonne" data-lines="|TER|Intercités|" data-f="multi k20 dp300 forest" data-s="le premier desert apres paris avallon luzy yonne ter depuis bercy ~2h30 87">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/premier-desert-apres-paris-rv" target="_blank" rel="noopener"><span class="num">87</span><span class="title">Le premier désert après Paris</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>129</b> km</span><span><b>2970</b> m D+</span><span>6 jours</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Avallon → Luzy</div>
+<div class="lines"><span>TER</span><span>Intercités</span></div>
+<div class="meta">TER depuis Bercy ~2h30 · Yonne</div>
+<div class="tags"><span>Au cœur de la forêt</span><span>Bivouac</span><span>Dénivelé à portée de main</span></div></li><li class="card" id="f88" data-n="88" data-km="20" data-dp="160" data-dept="Loiret" data-lines="|R|" data-f="day k20 water" data-s="l'oasis des moulins de la clery ferrieres-fontenay n.c. loiret transilien r 88">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/loasis-moulins-clery-rv" target="_blank" rel="noopener"><span class="num">88</span><span class="title">L'oasis des moulins de la Cléry</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>20</b> km</span><span><b>160</b> m D+</span><span>5h30</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Ferrières-Fontenay → n.c.</div>
+<div class="lines"><span>Ligne R</span></div>
+<div class="meta">Transilien R · Loiret</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Champêtre</span></div><div class="note">La fiche se contredit sur le point d'arrivée.</div></li><li class="card" id="f89" data-n="89" data-km="31" data-dp="200" data-dept="Loiret" data-lines="|TER|Bus/car|" data-f="multi k20 loop" data-s="regalade a pithiviers pithiviers pithiviers loiret train + car remi 89">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/regalade-pithiviers-rv" target="_blank" rel="noopener"><span class="num">89</span><span class="title">Régalade à Pithiviers</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>31</b> km</span><span><b>200</b> m D+</span><span>2 jours</span><span class="lvl">Accessible</span></div>
+<div class="route">Pithiviers → <em>boucle</em></div>
+<div class="lines"><span>TER</span><span>Bus/car</span></div>
+<div class="meta">Train + car Rémi · Loiret</div>
+<div class="tags"><span>Champêtre</span><span>Culture &amp; Patrimoine</span></div></li><li class="card" id="f90" data-n="90" data-km="88" data-dp="320" data-dept="Loiret" data-lines="||" data-f="multi k20 dp300 water" data-s="la loire aux oiseaux orleans gien loiret n.c. 90">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/loire-oiseaux-rv" target="_blank" rel="noopener"><span class="num">90</span><span class="title">La Loire aux oiseaux</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>88</b> km</span><span><b>320</b> m D+</span><span>3 jours</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Orléans → Gien</div>
+
+<div class="meta">n.c. · Loiret</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Champêtre</span><span>Culture &amp; Patrimoine</span></div></li><li class="card" id="f91" data-n="91" data-km="30" data-dp="70" data-dept="Loiret" data-lines="|TER|Bus/car|" data-f="multi k20 water" data-s="du loiret a la loire olivet beaugency loiret train jusqu'a orleans ~1h + bus 1 91">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/loiret-loire-rv" target="_blank" rel="noopener"><span class="num">91</span><span class="title">Du Loiret à la Loire</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>30</b> km</span><span><b>70</b> m D+</span><span>2 jours</span><span class="lvl">Accessible</span></div>
+<div class="route">Olivet → Beaugency</div>
+<div class="lines"><span>TER</span><span>Bus/car</span></div>
+<div class="meta">Train jusqu'à Orléans ~1h + bus 1 · Loiret</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Bivouac</span></div></li><li class="card" id="f92" data-n="92" data-km="60" data-dp="410" data-dept="Eure-et-Loir" data-lines="||" data-f="multi k20 dp300 water" data-s="au fil de l'eau entre blaise et eure dreux pontgouin eure-et-loir n.c. 92">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/fil-leau-blaise-eure-rv" target="_blank" rel="noopener"><span class="num">92</span><span class="title">Au fil de l'eau entre Blaise et Eure</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>60</b> km</span><span><b>410</b> m D+</span><span>3 jours</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Dreux → Pontgouin</div>
+
+<div class="meta">n.c. · Eure-et-Loir</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Champêtre</span></div></li><li class="card" id="f93" data-n="93" data-km="52" data-dp="700" data-dept="Perche" data-lines="||" data-f="multi k20 dp300" data-s="la campagne eternelle du perche nogent-le-rotrou bretoncelles perche n.c. 93">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/campagne-eternelle-perche-rv" target="_blank" rel="noopener"><span class="num">93</span><span class="title">La campagne éternelle du Perche</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>52</b> km</span><span><b>700</b> m D+</span><span>2 jours</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Nogent-le-Rotrou → Bretoncelles</div>
+
+<div class="meta">n.c. · Perche</div>
+<div class="tags"><span>Bivouac</span><span>Champêtre</span></div></li><li class="card" id="f94" data-n="94" data-km="67" data-dp="880" data-dept="Orne" data-lines="|TER|" data-f="multi k20 dp300" data-s="le cœur vert du perche nogent-le-rotrou le theil - la rouge orne ter depuis montparnasse (2h-2h15), retour ter meme ligne 94">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/cur-vert-perche-rv" target="_blank" rel="noopener"><span class="num">94</span><span class="title">Le cœur vert du Perche</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>67</b> km</span><span><b>880</b> m D+</span><span>3 jours</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Nogent-le-Rotrou → Le Theil - La Rouge</div>
+<div class="lines"><span>TER</span></div>
+<div class="meta">TER depuis Montparnasse (2h-2h15), retour TER même ligne · Orne</div>
+<div class="tags"><span>Bivouac</span><span>Champêtre</span></div><div class="note">Étapes : J1 Nogent-le-Rotrou → Rémalard 17 km (200/200) ; J2 Rémalard-en-Perche → Bellême ; J3 Bellême → Le Theil.</div></li><li class="card" id="f95" data-n="95" data-km="56" data-dp="1000" data-dept="Eure" data-lines="|TER|" data-f="multi k20 dp300" data-s="le grand canyon francilien gaillon-aubevoye pont-de-l’arche eure ter depuis saint-lazare ligne rouen (1h jusqu’a gaillon-aubevoye), retour ter depuis pont-de-l’arche (1h45) 95">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/grand-canyon-francilien-rv" target="_blank" rel="noopener"><span class="num">95</span><span class="title">Le grand canyon francilien</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>56</b> km</span><span><b>1000</b> m D+</span><span>3 jours</span><span class="lvl">Difficile</span></div>
+<div class="route">Gaillon-Aubevoye → Pont-de-l’Arche</div>
+<div class="lines"><span>TER</span></div>
+<div class="meta">TER depuis Saint-Lazare ligne Rouen (1h jusqu’à Gaillon-Aubevoye), retour TER depuis Pont-de-l’Arche (1h45) · Eure</div>
+<div class="tags"><span>Champêtre</span><span>Culture &amp; Patrimoine</span></div><div class="note">Étapes : Gaillon-Aubevoye → Les Andelys 15 km (170/170) ; Les Andelys → Andé ; Andé → Pont-de-l’Arche.</div></li><li class="card" id="f96" data-n="96" data-km="44" data-dp="500" data-dept="Seine-Maritime" data-lines="|TER|Bus/car|" data-f="multi k20 dp300 water" data-s="sur les traces des vikings barentin rives-de-seine (saint-wandrille) seine-maritime ter depuis paris via rouen (1h50), retour bus 530 jusqu’a rouen puis train (1h15) 96">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/traces-vikings-rv" target="_blank" rel="noopener"><span class="num">96</span><span class="title">Sur les traces des vikings</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>44</b> km</span><span><b>500</b> m D+</span><span>2 jours</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Barentin → Rives-de-Seine (Saint-Wandrille)</div>
+<div class="lines"><span>TER</span><span>Bus/car</span></div>
+<div class="meta">TER depuis Paris via Rouen (1h50), retour bus 530 jusqu’à Rouen puis train (1h15) · Seine-Maritime</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Champêtre</span><span>Culture &amp; Patrimoine</span></div><div class="note">Étapes : J1 Barentin → Lac de Jumièges 22 km (190/240) ; J2 Lac de Jumièges → Rives-de-Seine. Abbaye de Jumièges en J2.</div></li><li class="card" id="f97" data-n="97" data-km="36" data-dp="470" data-dept="Calvados" data-lines="|TER|" data-f="multi k20 dp300 water" data-s="plage, bocage et fromage pont-l'eveque trouville-deauville calvados ter depuis paris saint-lazare (env. 2h), retour ter depuis trouville-deauville (2h10) 97">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/plage-bocage-fromage-rv" target="_blank" rel="noopener"><span class="num">97</span><span class="title">Plage, bocage et fromage</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>36</b> km</span><span><b>470</b> m D+</span><span>2 jours</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Pont-l'Évêque → Trouville-Deauville</div>
+<div class="lines"><span>TER</span></div>
+<div class="meta">TER depuis Paris Saint-Lazare (env. 2h), retour TER depuis Trouville-Deauville (2h10) · Calvados</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Champêtre</span></div><div class="note">Étapes : J1 Pont-l'Évêque → Reux 13,7 km (230 D+) ; J2 Reux → Trouville-Deauville 21 km (240 D+). Pas de champ transport structuré sur la page : 'tr' déduit de la section « Comment s'y rendre ». Slug trouvé via le sitemap (https://www.rectoverso.co/sitemap.xml liste les 100 slugs rando-paris).</div></li><li class="card" id="f98" data-n="98" data-km="37" data-dp="500" data-dept="Seine-Maritime" data-lines="|TER|" data-f="multi k20 dp300 water" data-s="jolie cote d'albatre dieppe le treport seine-maritime n.c. 98">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/jolie-cote-dalbatre-rv" target="_blank" rel="noopener"><span class="num">98</span><span class="title">Jolie Côte d'Albâtre</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>37</b> km</span><span><b>500</b> m D+</span><span>2 jours</span><span class="lvl">Intermédiaire +</span></div>
+<div class="route">Dieppe → Le Tréport</div>
+<div class="lines"><span>TER</span></div>
+<div class="meta">n.c. · Seine-Maritime</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Champêtre</span></div><div class="note">Section « Comment s'y rendre » vide sur la page ; départ/arrivée tirés des étapes (J1 Dieppe → Petit-Caux 12,6 km 200 D+ ; J2 Petit-Caux → Le Tréport 24,5 km 310 D+). Le texte mentionne 'à la sortie du train' à Dieppe et 'reprendre le train' au Tréport, d'où lines=[TER] (déduction, non explicite). Nuit à Saint-Martin (Petit-Caux). Slug trouvé via le sitemap.</div></li><li class="card" id="f99" data-n="99" data-km="35" data-dp="200" data-dept="Somme" data-lines="|TER|" data-f="multi k20 water" data-s="des dunes aux falaises de la somme saint-valery-sur-somme le treport somme ter depuis paris gare du nord jusqu'a noyelles-sur-mer puis train de la baie de somme (ou stop) vers saint-valery ; retour ter depuis le treport (direct ou via beauvais) 99">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/dunes-falaises-somme-rv" target="_blank" rel="noopener"><span class="num">99</span><span class="title">Des dunes aux falaises de la Somme</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>35</b> km</span><span><b>200</b> m D+</span><span>2 jours</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Saint-Valéry-sur-Somme → Le Tréport</div>
+<div class="lines"><span>TER</span></div>
+<div class="meta">TER depuis Paris gare du Nord jusqu'à Noyelles-sur-Mer puis train de la Baie de Somme (ou stop) vers Saint-Valéry ; retour TER depuis Le Tréport (direct ou via Beauvais) · Somme</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Bivouac</span></div><div class="note">Étapes : J1 Saint-Valéry-sur-Somme → Cayeux-sur-Mer 17 km (40 D+) ; J2 Cayeux-sur-Mer → Le Tréport 18 km (150 D+). 'tr' déduit de « Comment s'y rendre ». Slug trouvé via le sitemap.</div></li><li class="card" id="f100" data-n="100" data-km="35" data-dp="100" data-dept="Somme" data-lines="|TER|Bus/car|" data-f="multi k20 water" data-s="on a marche sur la dune fort-mahon-plage saint-valery-sur-somme somme ter depuis paris gare du nord (direction boulogne-sur-mer) jusqu'a rue puis bus 710 vers fort-mahon-plage ; retour train a vapeur de la baie de somme jusqu'a noyelles-sur-mer puis ter 100">
+<a class="hit" href="https://www.rectoverso.co/fiches/rando-paris/on-marche-dune-rv" target="_blank" rel="noopener"><span class="num">100</span><span class="title">On a marché sur la dune</span><span class="go" aria-hidden="true">›</span></a>
+<div class="stats"><span><b>35</b> km</span><span><b>100</b> m D+</span><span>2 jours</span><span class="lvl">Intermédiaire</span></div>
+<div class="route">Fort-Mahon-Plage → Saint-Valéry-sur-Somme</div>
+<div class="lines"><span>TER</span><span>Bus/car</span></div>
+<div class="meta">TER depuis Paris gare du Nord (direction Boulogne-sur-Mer) jusqu'à Rue puis bus 710 vers Fort-Mahon-Plage ; retour train à vapeur de la Baie de Somme jusqu'à Noyelles-sur-Mer puis TER · Somme</div>
+<div class="tags"><span>Au bord de l'eau</span><span>Bivouac</span></div><div class="note">Étapes : J1 Fort-Mahon-Plage → Le Crotoy 18 km (20 D+) ; J2 Le Crotoy → Saint-Valéry-sur-Somme 18 km (60 D+). 'tr' déduit de « Comment s'y rendre ». Slug deviné (on-marche-dune-rv) puis confirmé par le sitemap.</div></li></ul>
+<div class="empty" id="empty" hidden>Aucune fiche ne correspond. Retire un filtre.</div>
+<details><summary>0 fiches introuvables</summary>
+<ul class="miss"></ul></details>
+</main>
+<footer class="pad">Chiffres relevés sur les fiches Recto Verso le 17/10/2026, sans les textes. Usage personnel.</footer>
+<script>
+(function(){
+var list=document.getElementById('list'),items=[].slice.call(list.children),st={q:'',dept:'',line:'',sort:'n',f:{}};
+function norm(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+function apply(){var q=norm(st.q.trim()),n=0,keys=Object.keys(st.f).filter(function(k){return st.f[k]});
+ var cmp={n:function(a,b){return a.dataset.n-b.dataset.n},km:function(a,b){return a.dataset.km-b.dataset.km},dp:function(a,b){return b.dataset.dp-a.dataset.dp},ratio:function(a,b){return b.dataset.dp/b.dataset.km-a.dataset.dp/a.dataset.km}}[st.sort];
+ items.sort(cmp).forEach(function(li){var f=' '+li.dataset.f+' ',ok=(!st.dept||li.dataset.dept===st.dept)&&(!st.line||li.dataset.lines.indexOf('|'+st.line+'|')>-1)&&(!q||li.dataset.s.indexOf(q)>-1)&&keys.every(function(k){return f.indexOf(' '+k+' ')>-1});li.hidden=!ok;if(ok)n++;list.appendChild(li)});
+ document.getElementById('count').textContent=n+' fiche'+(n>1?'s':'');document.getElementById('empty').hidden=n>0}
+document.getElementById('q').addEventListener('input',function(e){st.q=e.target.value;apply()});
+document.getElementById('dept').addEventListener('change',function(e){st.dept=e.target.value;apply()});
+document.getElementById('line').addEventListener('change',function(e){st.line=e.target.value;apply()});
+document.getElementById('sort').addEventListener('change',function(e){st.sort=e.target.value;apply()});
+[].forEach.call(document.querySelectorAll('.chip'),function(b){b.addEventListener('click',function(){var k=b.dataset.k,on=!st.f[k];st.f[k]=on;b.setAttribute('aria-pressed',on);
+ var other=k==='day'?'multi':k==='multi'?'day':null;if(on&&other){st.f[other]=false;document.querySelector('[data-k="'+other+'"]').setAttribute('aria-pressed','false')}apply()})});
+[].forEach.call(document.querySelectorAll('.strip a'),function(a){a.addEventListener('click',function(){var id=a.getAttribute('href').slice(1),el=document.getElementById(id);
+ if(el&&el.hidden){st={q:'',dept:'',line:'',sort:st.sort,f:{}};document.getElementById('q').value='';document.getElementById('dept').value='';document.getElementById('line').value='';[].forEach.call(document.querySelectorAll('.chip'),function(c){c.setAttribute('aria-pressed','false')});apply()}
+ if(id.charAt(0)==='m')document.querySelector('details').open=true})});
+})();
+</script>
+</body>
+</html>
