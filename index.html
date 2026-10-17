@@ -210,7 +210,7 @@ document.querySelectorAll('#basemap button').forEach(b=>b.onclick=()=>setBase(b.
 const lineBase=L.layerGroup().addTo(map),lineHi=L.layerGroup().addTo(map),stHi=L.layerGroup().addTo(map);
 const lineLayers={};
 LORDER.filter(l=>TR.lines[l]).forEach(l=>{const d=TR.lines[l];
-  lineLayers[l]=L.polyline(d.segs,{color:TL,weight:l==='TER'?2:2.5,opacity:l==='TER'?.45:.65,dashArray:'7 9',className:'tl',interactive:false}).addTo(lineBase);});
+  lineLayers[l]=L.polyline(d.segs,{color:TL,weight:2,opacity:l==='TER'?.5:.65,dashArray:'7 9',className:'tl',interactive:false}).addTo(lineBase);});
 // tracés
 // Chaque tracé = trait visible (non cliquable) + trait invisible large (zone de touche ~24 px) au-dessus
 const trackLayers={},hitLayers={},trackHi=L.layerGroup().addTo(map),hitPane=map.createPane('hit');hitPane.style.zIndex=450;
@@ -259,9 +259,10 @@ function apply(){let k=0;const html=[];
 function restyle(){const r=st.sel!==null?byN[st.sel]:null;const selLines=r?r.lines.map(geoKey):null;
   Object.keys(trackLayers).forEach(n=>{const on=st.sel===null||+n===st.sel;trackLayers[n].setStyle({color:TRACK,opacity:on?.9:.15,weight:on?3:2});});
   Object.keys(lineLayers).forEach(l=>{let op,w;
-    if(st.sel!==null){const on=selLines&&selLines.includes(l);op=on?1:.1;w=on?2.5:2;}
-    else if(st.line){const on=st.line===l;op=on?1:.25;w=on?4:2;}
-    else{op=l==='TER'?.45:.65;w=l==='TER'?2:2.5;}
+    // toujours 1 px plus fin que les tracés (3 px au repos, 4,5 px sélectionné)
+    if(st.sel!==null){const on=selLines&&selLines.includes(l);op=on?1:.1;w=on?2:1.5;}
+    else if(st.line){const on=st.line===l;op=on?1:.25;w=on?3:1.5;}
+    else{op=l==='TER'?.5:.65;w=2;}
     lineLayers[l].setStyle({color:TL,opacity:op,weight:w});});}
 function deselect(){const d=document.getElementById('detail');st.sel=null;trackHi.clearLayers();lineHi.clearLayers();d.classList.remove('show');document.querySelectorAll('.card.on').forEach(c=>c.classList.remove('on'));history.replaceState(null,'',' ');restyle();}
 map.on('click',()=>{if(st.sel!==null)deselect();});
@@ -270,8 +271,8 @@ function select(n){st.sel=n;const r=byN[n],t=T[n],a=TR.access[n]||{};
   L.polyline(t.pts,{color:'#fff',weight:9,opacity:.95}).addTo(trackHi);
   L.polyline(t.pts,{color:TRACK,weight:4.5,opacity:1}).addTo(trackHi);
   L.marker(t.pts[0],{icon:L.divIcon({className:'start-mark',iconSize:[12,12]}),interactive:false}).addTo(trackHi);
-  if(r)[...new Set(r.lines.map(geoKey).filter(Boolean))].forEach(l=>{L.polyline(TR.lines[l].segs,{color:'#fff',weight:8,opacity:.95,interactive:false}).addTo(lineHi);
-    L.polyline(TR.lines[l].segs,{color:TL,weight:4,opacity:1,dashArray:'9 11',className:'tl',interactive:false}).addTo(lineHi);});
+  if(r)[...new Set(r.lines.map(geoKey).filter(Boolean))].forEach(l=>{L.polyline(TR.lines[l].segs,{color:'#fff',weight:7,opacity:.95,interactive:false}).addTo(lineHi);
+    L.polyline(TR.lines[l].segs,{color:TL,weight:3.5,opacity:1,dashArray:'9 11',className:'tl',interactive:false}).addTo(lineHi);});
   const stObj=name=>TR.stations.find(s=>s.name===name);
   [['Départ',a.from],['Arrivée',t.loop?null:a.to]].forEach(([lab,x])=>{if(!x)return;const s=stObj(x.s);if(!s)return;
     L.marker([s.lat,s.lon],{icon:L.divIcon({className:'st-mark',iconSize:[14,14],html:`<div style="width:14px;height:14px;border-radius:50%;border:3px solid ${TL};background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.35)"></div>`}),interactive:false}).addTo(lineHi);
