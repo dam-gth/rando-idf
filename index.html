@@ -102,13 +102,10 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
 .prof .plbl b{color:var(--fg);font-weight:600}
 .prof .tip{position:absolute;bottom:2px;padding:1px 6px;border-radius:6px;background:var(--on);color:var(--on-fg);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap;pointer-events:none;display:none;transform:translateX(-50%)}
 .pt-mark{width:11px;height:11px;border-radius:50%;background:#fff;border:3px solid var(--track);box-shadow:0 1px 3px rgba(0,0,0,.4)}
-#detail .go{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center}
-#detail .go a{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:9px;background:var(--on);color:var(--on-fg);font-size:12.5px;font-weight:600;text-decoration:none}
+#detail .go{display:flex;gap:8px;margin-top:8px;align-items:center}
+#detail .go a{flex:1;justify-content:center;display:inline-flex;align-items:center;gap:5px;padding:7px 11px;border-radius:9px;background:var(--on);color:var(--on-fg);font-size:12.5px;font-weight:600;text-decoration:none}
 #detail .go a.sec{background:var(--fill);color:var(--fg)}
 #detail .go svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-#detail .home{display:flex;gap:6px;align-items:center;font-size:11.5px;color:var(--muted);margin-top:4px}
-#detail .home input{flex:1;min-width:0;padding:4px 8px;border:1px solid var(--hair);border-radius:7px;background:var(--fill);color:var(--fg);font:inherit;font-size:12px;outline:0}
-#detail .home input:focus{border-color:var(--hair2)}
 #detail a{color:var(--tl);font-weight:600;text-decoration:none;font-size:13px}
 #detail .x{position:absolute;right:10px;top:8px;border:0;background:transparent;color:var(--muted);font-size:20px;line-height:1;cursor:pointer;width:28px;height:28px;border-radius:8px}
 #detail .x:hover{background:var(--fill)}
@@ -284,14 +281,14 @@ function restyle(){const r=st.sel!==null?byN[st.sel]:null;const selLines=r?r.lin
   if(st.sel===null)drawLines(st.line?[st.line]:[],false);}
 // « Y aller » : itinéraire en transport en commun domicile → gare de départ, et gare d'arrivée → domicile.
 // Google Maps marche sur iPhone comme sur Mac ; pas d'horaires de train chez nous, c'est le meilleur substitut.
-const HOME_DEFAULT='Paris 18e';let HOME=HOME_DEFAULT;try{HOME=localStorage.getItem('home')||HOME_DEFAULT;}catch(x){}
+const HOME='Paris 18e';
 const gmaps=(o,d)=>`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(o)}&destination=${encodeURIComponent(d)}&travelmode=transit`;
 const ico='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20l14-8L5 4v6l9 2-9 2z"/></svg>';
 function renderGo(n){const a=TR.access[n]||{},t=T[n],el=document.getElementById('go');if(!el)return;
   const st=name=>TR.stations.find(s=>s.name===name);const f=a.from&&st(a.from.s),g=(!t.loop&&a.to)?st(a.to.s):f;
   const dest=s=>`${s.lat},${s.lon}`;
-  el.innerHTML=(f?`<a href="${gmaps(HOME,dest(f))}" target="_blank" rel="noopener">${ico}Y aller · ${esc(f.name)}</a>`:'')+
-    (g?`<a class="sec" href="${gmaps(dest(g),HOME)}" target="_blank" rel="noopener">Retour · ${esc(g.name)}</a>`:'');}
+  el.innerHTML=(f?`<a href="${gmaps(HOME,dest(f))}" target="_blank" rel="noopener" title="Depuis ${esc(HOME)} jusqu'à ${esc(f.name)}">${ico}Y aller</a>`:'')+
+    (g?`<a class="sec" href="${gmaps(dest(g),HOME)}" target="_blank" rel="noopener" title="De ${esc(g.name)} à ${esc(HOME)}">Retour</a>`:'');}
 // Profil altimétrique : SVG à l'échelle (x = km, y = altitude), survol ou toucher → point sur le tracé.
 const profMark=L.layerGroup().addTo(map);
 function renderProfile(n){const t=T[n],el=document.getElementById('prof');if(!el)return;
@@ -338,11 +335,9 @@ function select(n){st.sel=n;const r=byN[n],t=T[n],a=TR.access[n]||{};
   <div class="acc">Départ : ${acc(a.from)}${t.loop?' · boucle':`<br>Arrivée : ${acc(a.to)}`}</div>
   <div class="prof" id="prof"></div>
   <div class="links">${r?`<a href="${esc(r.url)}" target="_blank" rel="noopener">Fiche ›</a>`:''}<a href="${esc(r?r.gpx:missN[n]?missN[n].gpx:'')}" target="_blank" rel="noopener">GPX ›</a></div>
-  <div class="go" id="go"></div>
-  <div class="home"><span>Depuis</span><input id="home" type="text" value="${esc(HOME)}" placeholder="Adresse de départ" aria-label="Adresse de départ" autocomplete="street-address"></div>`;
+  <div class="go" id="go"></div>`;
   document.getElementById('dx').onclick=deselect;
   renderGo(n);renderProfile(n);
-  document.getElementById('home').addEventListener('change',e=>{HOME=e.target.value.trim()||HOME_DEFAULT;try{localStorage.setItem('home',HOME);}catch(x){}renderGo(n);});
   history.replaceState(null,'','#'+n);restyle();
   setMode('map');}
 
