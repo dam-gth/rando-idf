@@ -614,14 +614,13 @@ async function open3d(o){const box=document.getElementById('v3d');box.hidden=fal
     gr:{type:'geojson',data:{type:'Feature',geometry:{type:'MultiLineString',coordinates:(o.grChains||[]).map(c=>c.map(p=>[p[1],p[0]]))}}},
     cur:{type:'geojson',data:{type:'FeatureCollection',features:[]}},
     ends:{type:'geojson',data:{type:'FeatureCollection',features:[{type:'Feature',properties:{k:'a'},geometry:{type:'Point',coordinates:pts[0]}},{type:'Feature',properties:{k:'b'},geometry:{type:'Point',coordinates:pts[pts.length-1]}}]}}},
-    layers:[{id:'gray',type:'raster',source:'gray'},{id:'shade',type:'raster',source:'shade',paint:{'raster-opacity':1,'raster-contrast':.45,'raster-brightness-max':.95}},
+    layers:[{id:'gray',type:'raster',source:'gray'},{id:'shade',type:'raster',source:'shade',paint:{'raster-opacity':.6}},
       {id:'ign',type:'raster',source:'ign',layout:{visibility:'none'}},{id:'topo',type:'raster',source:'topo',layout:{visibility:'none'}},{id:'photo',type:'raster',source:'photo',layout:{visibility:'none'}},
       {id:'gr',type:'line',source:'gr',paint:{'line-color':css('--gr'),'line-width':2,'line-opacity':.55},layout:{'line-cap':'round','line-join':'round'}},
       {id:'track-casing',type:'line',source:'track',paint:{'line-color':'#fff','line-width':7,'line-opacity':.9},layout:{'line-cap':'round','line-join':'round'}},
       {id:'track',type:'line',source:'track',paint:{'line-color':TRACK,'line-width':3.5},layout:{'line-cap':'round','line-join':'round'}},
       {id:'ends',type:'circle',source:'ends',paint:{'circle-radius':6,'circle-color':['match',['get','k'],'a',TRACK,'#111'],'circle-stroke-color':'#fff','circle-stroke-width':2}},
-      {id:'cur',type:'circle',source:'cur',paint:{'circle-radius':8,'circle-color':'#fff','circle-stroke-color':TRACK,'circle-stroke-width':3.5}}],
-    sky:{'sky-color':'#cfe0f2','horizon-color':'#eef2f6','fog-color':'#e9ecef','sky-horizon-blend':.6}};
+      {id:'cur',type:'circle',source:'cur',paint:{'circle-radius':8,'circle-color':'#fff','circle-stroke-color':TRACK,'circle-stroke-width':3.5}}]};
   try{
     if(v3d){v3d.remove();v3d=null;}
     v3d=new M.Map({container:'v3dmap',style,bounds,fitBoundsOptions:{padding:60},maxPitch:75,attributionControl:{compact:true}});
