@@ -14,16 +14,16 @@
 :root{
   --bg:#e9ebee;--glass:rgba(255,255,255,.62);--glass2:rgba(255,255,255,.94);--fg:#15181c;--muted:#6f7780;
   --hair:rgba(21,24,28,.09);--hair2:rgba(21,24,28,.16);--fill:rgba(21,24,28,.05);--on:#15181c;--on-fg:#fff;
-  --track:#FC4C02;--tl:#2F5D8A;--gr:#7A1F2E;--sel:rgba(47,93,138,.09);--shadow:0 10px 40px rgba(15,20,30,.14),0 1px 2px rgba(15,20,30,.06);
+  --track:#FC4C02;--tl:#2F5D8A;--gr:#7A1F2E;--grp:#C4607C;--sel:rgba(47,93,138,.09);--shadow:0 10px 40px rgba(15,20,30,.14),0 1px 2px rgba(15,20,30,.06);
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){
   --bg:#141719;--glass:rgba(22,25,29,.6);--glass2:rgba(22,25,29,.93);--fg:#eceef0;--muted:#98a1aa;
   --hair:rgba(255,255,255,.09);--hair2:rgba(255,255,255,.18);--fill:rgba(255,255,255,.06);--on:#eceef0;--on-fg:#15181c;
-  --tl:#8AB4E8;--gr:#D4607A;--sel:rgba(138,180,232,.14);--shadow:0 10px 40px rgba(0,0,0,.5),0 1px 2px rgba(0,0,0,.4);color-scheme:dark}}
+  --tl:#8AB4E8;--gr:#D4607A;--grp:#F0A8BC;--sel:rgba(138,180,232,.14);--shadow:0 10px 40px rgba(0,0,0,.5),0 1px 2px rgba(0,0,0,.4);color-scheme:dark}}
 :root[data-theme=dark]{
   --bg:#141719;--glass:rgba(22,25,29,.6);--glass2:rgba(22,25,29,.93);--fg:#eceef0;--muted:#98a1aa;
   --hair:rgba(255,255,255,.09);--hair2:rgba(255,255,255,.18);--fill:rgba(255,255,255,.06);--on:#eceef0;--on-fg:#15181c;
-  --tl:#8AB4E8;--gr:#D4607A;--sel:rgba(138,180,232,.14);--shadow:0 10px 40px rgba(0,0,0,.5),0 1px 2px rgba(0,0,0,.4);color-scheme:dark}
+  --tl:#8AB4E8;--gr:#D4607A;--grp:#F0A8BC;--sel:rgba(138,180,232,.14);--shadow:0 10px 40px rgba(0,0,0,.5),0 1px 2px rgba(0,0,0,.4);color-scheme:dark}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-font-smoothing:antialiased;overflow:hidden}
@@ -238,7 +238,7 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
 <button type="button" role="menuitemradio" data-b="topo" aria-pressed="false"><span>Topo<small>OpenTopoMap</small></span></button>
 <button type="button" role="menuitemradio" data-b="photo" aria-pressed="false"><span>Photo aérienne<small>IGN</small></span></button>
 <div class="sep"></div><div class="lbl">Afficher</div>
-<label><input type="checkbox" id="vis-gr"><i class="sw" style="background:var(--gr)"></i>GR / GRP</label>
+<label><input type="checkbox" id="vis-gr"><i class="sw" style="background:var(--gr)"></i>GR <i class="sw" style="background:repeating-linear-gradient(90deg,var(--grp) 0 4px,transparent 4px 7px)"></i>GRP</label>
 <label><input type="checkbox" id="vis-train" checked><i class="sw" style="background:repeating-linear-gradient(90deg,var(--tl) 0 4px,transparent 4px 7px)"></i>Lignes de train</label>
 <label><input type="checkbox" id="vis-hikes" checked><i class="sw" style="background:var(--track)"></i>Itinéraires de rando</label>
 </div></div>
@@ -436,7 +436,7 @@ async function grRefresh(){const note=document.getElementById('grnote');
   if(map.getZoom()<9){ // aperçu national : un seul fichier simplifié, cliquable aussi
     if(grLayer.hasLayer(grTilesG))grLayer.removeLayer(grTilesG);if(!grLayer.hasLayer(grOv))grOv.addTo(grLayer);
     if(!grOvP){grOvP=Promise.all([grLoadIndex(),fetch('gr/overview.json').then(r=>r.ok?r.json():[])]).then(([,pieces])=>{pieces.forEach(pc=>{
-      L.polyline(pc.pts,{color:css('--gr'),weight:1.5,opacity:.8,interactive:false,grVis:true,grId:pc.id}).addTo(grOv);
+      L.polyline(pc.pts,{color:css(pc.net==='GRP'?'--grp':'--gr'),weight:pc.net==='GRP'?1.2:1.5,opacity:.8,dashArray:pc.net==='GRP'?'4 4':null,interactive:false,grVis:true,grId:pc.id}).addTo(grOv);
       const hit=L.polyline(pc.pts,{weight:10,opacity:0,pane:'hit',bubblingMouseEvents:false,grId:pc.id}).addTo(grOv);
       hit.bindTooltip(()=>esc(grName(pc.id)),{sticky:true});hit.on('click',e=>{L.DomEvent.stop(e);grSelect(pc.id);});});restyle();}).catch(()=>{});}
     return;}
@@ -445,7 +445,7 @@ async function grRefresh(){const note=document.getElementById('grnote');
   for(let la=Math.floor(b.getSouth()/0.5)*0.5;la<=b.getNorth();la+=0.5)for(let lo=Math.floor(b.getWest()/0.5)*0.5;lo<=b.getEast();lo+=0.5)keys.push(la.toFixed(1)+'_'+lo.toFixed(1));
   for(const k of keys){if(grTiles.has(k))continue;const g=L.layerGroup();grTiles.set(k,g);g.addTo(grTilesG);
     fetch('gr/t/'+k+'.json').then(r=>r.ok?r.json():[]).then(pieces=>{pieces.forEach(pc=>{
-      L.polyline(pc.pts,{color:css('--gr'),weight:2.5,opacity:.9,dashArray:pc.net==='GRP'?'5 4':null,interactive:false,grVis:true,grId:pc.id}).addTo(g);
+      L.polyline(pc.pts,{color:css(pc.net==='GRP'?'--grp':'--gr'),weight:pc.net==='GRP'?2:2.5,opacity:.9,dashArray:pc.net==='GRP'?'6 5':null,interactive:false,grVis:true,grId:pc.id}).addTo(g);
       const hit=L.polyline(pc.pts,{weight:HIT,opacity:0,pane:'hit',bubblingMouseEvents:false,grId:pc.id}).addTo(g);
       hit.bindTooltip(()=>esc(grName(pc.id)),{sticky:true});hit.on('click',e=>{L.DomEvent.stop(e);grSelect(pc.id);});});
       restyle();}).catch(()=>{});}}
@@ -468,7 +468,7 @@ async function grSelect(id){if(st.sel!==null)deselect();grReset();gr.sel=id;docu
   await grLoadIndex();grPanel('<div class="gr-busy"><i></i>Chargement du GR…</div>');restyle();
   let data;try{data=await fetch('gr/r/'+id+'.json').then(r=>{if(!r.ok)throw 0;return r.json();});}catch(x){if(my===grReq)grPanel('<div class="gr-warn">Tracé du GR indisponible.</div>');return;}
   if(my!==grReq)return;gr.data=data;
-  data.chains.forEach(c=>{L.polyline(c,{color:'#fff',weight:7,opacity:.9,interactive:false}).addTo(grHi);L.polyline(c,{color:css('--gr'),weight:3.5,opacity:1,interactive:false}).addTo(grHi);});
+  data.chains.forEach(c=>{L.polyline(c,{color:'#fff',weight:7,opacity:.9,interactive:false}).addTo(grHi);L.polyline(c,{color:css(data.net==='GRP'?'--grp':'--gr'),weight:3.5,opacity:1,dashArray:data.net==='GRP'?'8 6':null,interactive:false}).addTo(grHi);});
   // gares à moins de 2 km du GR (grille sur les segments)
   const CELL=0.02,grid=new Map();const ck=(la,lo)=>Math.floor(la/CELL)+':'+Math.floor(lo/CELL);
   data.chains.forEach((c,ci)=>{for(let i=1;i<c.length;i++){const a=c[i-1],b=c[i];const i0=Math.min(Math.floor(a[0]/CELL),Math.floor(b[0]/CELL)),i1=Math.max(Math.floor(a[0]/CELL),Math.floor(b[0]/CELL)),j0=Math.min(Math.floor(a[1]/CELL),Math.floor(b[1]/CELL)),j1=Math.max(Math.floor(a[1]/CELL),Math.floor(b[1]/CELL));
