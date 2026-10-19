@@ -1,0 +1,4 @@
+# Fichier indicatif : sur un site de projet GitHub Pages, seul le robots.txt de dam-gth.github.io/ fait foi.
+# La protection réelle est la balise <meta name="robots" content="noindex, nofollow, …"> dans chaque page.
+User-agent: *
+Disallow: /
