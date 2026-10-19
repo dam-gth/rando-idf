@@ -607,7 +607,7 @@ async function open3d(o){const box=document.getElementById('v3d');box.hidden=fal
     gray:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:16,attribution:'© Esri · © OpenStreetMap'},
     shade:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:16},
     ign:{type:'raster',tiles:['https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png'],tileSize:256,maxzoom:18,attribution:'© IGN'},
-    topo:{type:'raster',tiles:['https://a.tile.opentopomap.org/{z}/{x}/{y}.png','https://b.tile.opentopomap.org/{z}/{x}/{y}.png','https://c.tile.opentopomap.org/{z}/{x}/{y}.png'],tileSize:256,minzoom:11,maxzoom:17,attribution:'© OpenStreetMap, SRTM · OpenTopoMap'},
+    topo:{type:'raster',tiles:['https://a.tile.opentopomap.org/{z}/{x}/{y}.png','https://b.tile.opentopomap.org/{z}/{x}/{y}.png','https://c.tile.opentopomap.org/{z}/{x}/{y}.png'],tileSize:256,maxzoom:17,attribution:'© OpenStreetMap, SRTM · OpenTopoMap'},
     photo:{type:'raster',tiles:['https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg'],tileSize:256,maxzoom:19,attribution:'© IGN'},
     dem:{type:'raster-dem',tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],tileSize:256,encoding:'terrarium',maxzoom:15,attribution:'Terrain Tiles (Mapzen, AWS)'},
     track:{type:'geojson',data:{type:'Feature',geometry:{type:'LineString',coordinates:pts}}},
@@ -697,8 +697,10 @@ function setBase3d(k){base3d=k;try{localStorage.setItem('base3d',k);}catch(x){}
   document.querySelectorAll('#v3dbasemenu button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.b===k));
   if(!v3d||!v3d.getLayer('gray'))return;
   ['ign','topo','photo'].forEach(id=>v3d.setLayoutProperty(id,'visibility',id===k?'visible':'none'));
-  v3d.setLayoutProperty('gray','visibility',k==='gray'||k==='topo'?'visible':'none'); // sous Topo : gris au loin
-  v3d.setLayoutProperty('shade','visibility',k==='gray'||k==='ign'||k==='topo'?'visible':'none');}
+  v3d.setLayoutProperty('gray','visibility',k==='gray'?'visible':'none');
+  v3d.setLayoutProperty('shade','visibility',k==='gray'||k==='ign'?'visible':'none');
+  // OpenTopoMap change de dessin sous le zoom 11 : en Topo on limite l'inclinaison pour garder le lointain au même niveau de zoom
+  v3d.setMaxPitch(k==='topo'?50:75);if(k==='topo'&&v3d.getPitch()>50)v3d.easeTo({pitch:50,duration:400});}
 {const btn=document.getElementById('v3dbase'),menu=document.getElementById('v3dbasemenu');const open=o=>{menu.hidden=!o;btn.setAttribute('aria-expanded',o);};
   btn.onclick=e=>{e.stopPropagation();open(menu.hidden);};menu.addEventListener('click',e=>e.stopPropagation());
   document.querySelectorAll('#v3dbasemenu button').forEach(b=>b.onclick=()=>{setBase3d(b.dataset.b);open(false);});
