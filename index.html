@@ -619,13 +619,20 @@ async function open3d(o){const box=document.getElementById('v3d');box.hidden=fal
   v3d._track=o.pts;v3d._bounds=bounds;}
 function close3d(){stopFly();if(v3d){try{v3d.remove();}catch(e){}v3d=null;}document.getElementById('v3d').hidden=true;v3dMsg('');}
 function stopFly(){if(v3dAnim){cancelAnimationFrame(v3dAnim);v3dAnim=null;}}
-// Survol : la caméra suit le tracé, ~500 m derrière le point courant, 20 s pour tout parcourir
+// Survol : la caméra avance à vitesse constante le long du tracé, regarde vers un point 1,5 km devant
+// (le cap est lissé : pas de rotation à chaque virage), et le point courant est dessiné sur le tracé.
 function fly3d(){if(!v3d||!v3d._track)return;stopFly();const P=v3d._track;const d=[0];for(let i=1;i<P.length;i++)d.push(d[i-1]+hv(P[i-1],P[i]));const tot=d[d.length-1];
-  const at=x=>{let i=0;while(i<d.length-2&&d[i+1]<x)i++;const t=(x-d[i])/Math.max(1,d[i+1]-d[i]);return [P[i][0]+(P[i+1][0]-P[i][0])*t,P[i][1]+(P[i+1][1]-P[i][1])*t];};
-  const t0=performance.now(),DUR=20000;
-  const step=now=>{const f=Math.min(1,(now-t0)/DUR);const x=f*tot;const p=at(x),q=at(Math.max(0,x-400));
-    const br=(Math.atan2(p[1]-q[1],p[0]-q[0])*180/Math.PI+360)%360; // azimut du mouvement (lon/lat → est/nord)
-    const bearing=(90-br+360)%360;v3d.jumpTo({center:[p[1],p[0]],bearing,pitch:62,zoom:14.2});
+  const at=x=>{x=Math.max(0,Math.min(tot,x));let i=0;while(i<d.length-2&&d[i+1]<x)i++;const t=(x-d[i])/Math.max(1,d[i+1]-d[i]);return [P[i][0]+(P[i+1][0]-P[i][0])*t,P[i][1]+(P[i+1][1]-P[i][1])*t];};
+  const az=(a,b)=>{const y=Math.sin((b[1]-a[1])*Math.PI/180)*Math.cos(b[0]*Math.PI/180),x=Math.cos(a[0]*Math.PI/180)*Math.sin(b[0]*Math.PI/180)-Math.sin(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.cos((b[1]-a[1])*Math.PI/180);return (Math.atan2(y,x)*180/Math.PI+360)%360;};
+  const wrap=v=>((v+540)%360)-180;
+  const cur=v3d.getSource('cur');const DUR=Math.max(20000,tot/1000*2500); // ≥ 20 s, ~2,5 s par km
+  let bearing=az(at(0),at(Math.min(tot,1500)));const t0=performance.now();
+  v3d.jumpTo({center:[at(0)[1],at(0)[0]],bearing,pitch:62,zoom:13.8});
+  const step=now=>{const f=Math.min(1,(now-t0)/DUR);const x=f*tot;const p=at(x);
+    const ahead=at(Math.min(tot,x+1500));const target=(x+200<tot)?az(p,ahead):bearing;
+    bearing+=wrap(target-bearing)*0.02;                      // lissage : ~1 s pour prendre un nouveau cap
+    v3d.jumpTo({center:[p[1],p[0]],bearing,pitch:62,zoom:13.8});
+    if(cur)cur.setData({type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Point',coordinates:[p[1],p[0]]}}]});
     if(f<1)v3dAnim=requestAnimationFrame(step);else v3dAnim=null;};
   v3dAnim=requestAnimationFrame(step);}
 // Sphère d'orientation : on la fait tourner à la souris ou au doigt → azimut (gauche/droite) et inclinaison (haut/bas) de la caméra.
