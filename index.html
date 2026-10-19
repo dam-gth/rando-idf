@@ -268,7 +268,6 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
 </aside>
 <div id="basemap"><button id="lay" class="glass" type="button" aria-label="Calques" title="Calques" aria-expanded="false" aria-controls="laymenu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg></button>
 <div id="laymenu" class="glass" role="menu" hidden>
-<button type="button" role="menuitemradio" data-b="gray" aria-pressed="false"><span>Gris<small>Esri, neutre</small></span></button>
 <button type="button" role="menuitemradio" data-b="relief" aria-pressed="true"><span>Gris relief<small>Esri, ombrage du terrain</small></span></button>
 <button type="button" role="menuitemradio" data-b="ign" aria-pressed="false"><span>Plan IGN<small>courbes de niveau, sentiers</small></span></button>
 <button type="button" role="menuitemradio" data-b="topo" aria-pressed="false"><span>Topo<small>OpenTopoMap</small></span></button>
@@ -308,7 +307,7 @@ L.control.zoom({position:'bottomright'}).addTo(map);
 L.control.scale({imperial:false,position:'bottomright'}).addTo(map);
 // Fonds neutres : gris Esri par défaut, OSM désaturé par CSS, topo. Si un fond ne charge pas, on passe au suivant.
 const E=L.Util.emptyImageUrl;
-const bases={gray:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:16,errorTileUrl:E,attribution:''}),
+const bases={
   topo:L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,errorTileUrl:E,attribution:'© OpenStreetMap, SRTM · OpenTopoMap (CC-BY-SA)',className:'tamed'}),
   // IGN Géoplateforme, couches libres sans clé (le SCAN 25 demande une clé personnelle, voir README)
   // gris + ombrage du relief (Esri World Hillshade, sans clé), fondu en multiplication
@@ -320,7 +319,7 @@ let cur='';
 function setBase(k){cur=k;Object.values(bases).forEach(l=>map.removeLayer(l));bases[k].addTo(map);
   document.querySelectorAll('#laymenu button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.b===k));
   try{localStorage.setItem('base',k);}catch(x){}}
-{let b='relief';try{b=localStorage.getItem('base')||'relief';}catch(x){}setBase(bases[b]?b:'relief');}
+{let b='relief';try{b=localStorage.getItem('base')||'relief';}catch(x){}setBase(bases[b]?b:'relief');} // l'ancien fond « Gris » sans relief a été retiré : repli sur Gris relief
 const layBtn=document.getElementById('lay'),layMenu=document.getElementById('laymenu');
 const openLay=o=>{layMenu.hidden=!o;layBtn.setAttribute('aria-expanded',o);};
 layBtn.onclick=e=>{e.stopPropagation();openLay(layMenu.hidden);};
