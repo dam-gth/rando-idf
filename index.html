@@ -195,6 +195,8 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
   .hd{display:none}
   .mode-map #detail.show{padding-top:14px}
   .gr-list{max-height:112px} /* deux gares visibles, le reste au défilement */
+  body.gr-on .tabs{display:none} /* gare à gare sur GR : onglets inutiles pendant le choix des gares */
+  body.gr-on.mode-map #detail.show{padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
   /* onglets en bas de la feuille, sous le pouce */
   .tabs{order:99;margin:0;border:0;border-top:1px solid var(--hair);border-radius:0;background:transparent;padding:8px 14px calc(8px + env(safe-area-inset-bottom,0px))}
   .tabs button{padding:9px 10px;font-size:13.5px}
@@ -458,10 +460,10 @@ function applyVis(){try{localStorage.setItem('vis',JSON.stringify(vis));}catch(x
 // --- mode GR : sélection, gares à < 2 km, choix départ/arrivée, itinéraire, GPX
 const gr={sel:null,data:null,stations:[],from:null,to:null,route:null,marks:L.layerGroup().addTo(map)};
 let grReq=0;
-function grReset(){gr.sel=null;gr.data=null;gr.stations=[];gr.from=null;gr.to=null;gr.route=null;grReq++;
+function grReset(){document.body.classList.remove('gr-on');gr.sel=null;gr.data=null;gr.stations=[];gr.from=null;gr.to=null;gr.route=null;grReq++;
   grHi.clearLayers();grRoute.clearLayers();gr.marks.clearLayers();profMark.clearLayers();
   const d=document.getElementById('detail');d.classList.remove('show');d.innerHTML='';history.replaceState(null,'',' ');restyle();}
-async function grSelect(id){if(st.sel!==null)deselect();grReset();gr.sel=id;const my=++grReq;
+async function grSelect(id){if(st.sel!==null)deselect();grReset();gr.sel=id;document.body.classList.add('gr-on');const my=++grReq;
   if(!map.hasLayer(grHi))grHi.addTo(map);if(!map.hasLayer(grRoute))grRoute.addTo(map);
   await grLoadIndex();grPanel('<div class="gr-busy"><i></i>Chargement du GR…</div>');restyle();
   let data;try{data=await fetch('gr/r/'+id+'.json').then(r=>{if(!r.ok)throw 0;return r.json();});}catch(x){if(my===grReq)grPanel('<div class="gr-warn">Tracé du GR indisponible.</div>');return;}
