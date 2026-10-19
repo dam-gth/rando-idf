@@ -238,7 +238,8 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
 <button type="button" role="menuitemradio" data-b="topo" aria-pressed="false"><span>Topo<small>OpenTopoMap</small></span></button>
 <button type="button" role="menuitemradio" data-b="photo" aria-pressed="false"><span>Photo aérienne<small>IGN</small></span></button>
 <div class="sep"></div><div class="lbl">Afficher</div>
-<label><input type="checkbox" id="vis-gr"><i class="sw" style="background:var(--gr)"></i>GR <i class="sw" style="background:repeating-linear-gradient(90deg,var(--grp) 0 4px,transparent 4px 7px)"></i>GRP</label>
+<label><input type="checkbox" id="vis-gr"><i class="sw" style="background:var(--gr)"></i>GR</label>
+<label><input type="checkbox" id="vis-grp"><i class="sw" style="background:repeating-linear-gradient(90deg,var(--grp) 0 4px,transparent 4px 7px)"></i>GRP</label>
 <label><input type="checkbox" id="vis-train" checked><i class="sw" style="background:repeating-linear-gradient(90deg,var(--tl) 0 4px,transparent 4px 7px)"></i>Lignes de train</label>
 <label><input type="checkbox" id="vis-hikes" checked><i class="sw" style="background:var(--track)"></i>Itinéraires de rando</label>
 </div></div>
@@ -419,7 +420,7 @@ function select(n){if(gr.sel!==null)grReset();st.sel=n;const r=byN[n],t=T[n],a=T
 
 // ======================= Calques et mode GR =======================
 // Visibilité des calques (mémorisée) ; GR décoché par défaut pour ne rien charger inutilement
-const vis={gr:false,train:true,hikes:true};try{Object.assign(vis,JSON.parse(localStorage.getItem('vis')||'{}'));}catch(x){}
+const vis={gr:false,grp:false,train:true,hikes:true};try{Object.assign(vis,JSON.parse(localStorage.getItem('vis')||'{}'));}catch(x){}
 const hv=(a,b)=>{const R=6371000,p1=a[0]*Math.PI/180,p2=b[0]*Math.PI/180,dl=(b[1]-a[1])*Math.PI/180;const x=Math.sin((p2-p1)/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;return 2*R*Math.asin(Math.sqrt(x));};
 // distance point → segment en mètres, et projeté (t)
 function perpT(p,a,b){const k=Math.cos(a[0]*Math.PI/180)*111320,ky=111320;const ax=a[1]*k,ay=a[0]*ky,bx=b[1]*k,by=b[0]*ky,px=p[1]*k,py=p[0]*ky;const dx=bx-ax,dy=by-ay;
@@ -427,17 +428,20 @@ function perpT(p,a,b){const k=Math.cos(a[0]*Math.PI/180)*111320,ky=111320;const 
 // --- calque GR : tuiles de 0,5° chargées selon la vue (site/gr/t/<lat>_<lon>.json), index pour les noms
 const grLayer=L.layerGroup(),grOv=L.layerGroup(),grTilesG=L.layerGroup(),grHi=L.layerGroup(),grRoute=L.layerGroup(),grTiles=new Map();let grIndex=null,grIndexP=null,grOvP=null;
 const tk=v=>(Math.floor(v/0.5)*0.5).toFixed(1);
+// GR et GRP se masquent séparément : chaque trait connaît son groupe, on l'y retire ou remet
+const grAll=[];function grAdd(g,l){l._grParent=g;grAll.push(l);if(vis[l.options.grNet==='GRP'?'grp':'gr'])l.addTo(g);return l;}
+function grApplyNets(){grAll.forEach(l=>{const on=vis[l.options.grNet==='GRP'?'grp':'gr'];if(on&&!l._grParent.hasLayer(l))l.addTo(l._grParent);if(!on&&l._grParent.hasLayer(l))l._grParent.removeLayer(l);});}
 async function grLoadIndex(){if(grIndex)return grIndex;if(!grIndexP)grIndexP=fetch('gr/index.json').then(r=>r.ok?r.json():[]).then(a=>{grIndex={};a.forEach(x=>grIndex[x.id]=x);return grIndex;}).catch(()=>grIndex={});return grIndexP;}
 const grName=id=>{const x=grIndex&&grIndex[id];return x?(x.ref||x.net)+(x.name?' · '+x.name:''):'GR';};
 async function grRefresh(){const note=document.getElementById('grnote');
-  if(!vis.gr){if(map.hasLayer(grLayer))map.removeLayer(grLayer);note.hidden=true;return;}
+  if(!vis.gr&&!vis.grp){if(map.hasLayer(grLayer))map.removeLayer(grLayer);note.hidden=true;return;}
   if(!map.hasLayer(grLayer))grLayer.addTo(map);
   note.hidden=true;
   if(map.getZoom()<9){ // aperçu national : un seul fichier simplifié, cliquable aussi
     if(grLayer.hasLayer(grTilesG))grLayer.removeLayer(grTilesG);if(!grLayer.hasLayer(grOv))grOv.addTo(grLayer);
     if(!grOvP){grOvP=Promise.all([grLoadIndex(),fetch('gr/overview.json').then(r=>r.ok?r.json():[])]).then(([,pieces])=>{pieces.forEach(pc=>{
-      L.polyline(pc.pts,{color:css(pc.net==='GRP'?'--grp':'--gr'),weight:pc.net==='GRP'?1.2:1.5,opacity:.8,dashArray:pc.net==='GRP'?'4 4':null,interactive:false,grVis:true,grId:pc.id}).addTo(grOv);
-      const hit=L.polyline(pc.pts,{weight:10,opacity:0,pane:'hit',bubblingMouseEvents:false,grId:pc.id}).addTo(grOv);
+      grAdd(grOv,L.polyline(pc.pts,{color:css(pc.net==='GRP'?'--grp':'--gr'),weight:pc.net==='GRP'?1.2:1.5,opacity:.8,dashArray:pc.net==='GRP'?'4 4':null,interactive:false,grVis:true,grId:pc.id,grNet:pc.net}));
+      const hit=grAdd(grOv,L.polyline(pc.pts,{weight:10,opacity:0,pane:'hit',bubblingMouseEvents:false,grId:pc.id,grNet:pc.net}));
       hit.bindTooltip(()=>esc(grName(pc.id)),{sticky:true});hit.on('click',e=>{L.DomEvent.stop(e);grSelect(pc.id);});});restyle();}).catch(()=>{});}
     return;}
   if(grLayer.hasLayer(grOv))grLayer.removeLayer(grOv);if(!grLayer.hasLayer(grTilesG))grTilesG.addTo(grLayer);
@@ -445,18 +449,18 @@ async function grRefresh(){const note=document.getElementById('grnote');
   for(let la=Math.floor(b.getSouth()/0.5)*0.5;la<=b.getNorth();la+=0.5)for(let lo=Math.floor(b.getWest()/0.5)*0.5;lo<=b.getEast();lo+=0.5)keys.push(la.toFixed(1)+'_'+lo.toFixed(1));
   for(const k of keys){if(grTiles.has(k))continue;const g=L.layerGroup();grTiles.set(k,g);g.addTo(grTilesG);
     fetch('gr/t/'+k+'.json').then(r=>r.ok?r.json():[]).then(pieces=>{pieces.forEach(pc=>{
-      L.polyline(pc.pts,{color:css(pc.net==='GRP'?'--grp':'--gr'),weight:pc.net==='GRP'?2:2.5,opacity:.9,dashArray:pc.net==='GRP'?'6 5':null,interactive:false,grVis:true,grId:pc.id}).addTo(g);
-      const hit=L.polyline(pc.pts,{weight:HIT,opacity:0,pane:'hit',bubblingMouseEvents:false,grId:pc.id}).addTo(g);
+      grAdd(g,L.polyline(pc.pts,{color:css(pc.net==='GRP'?'--grp':'--gr'),weight:pc.net==='GRP'?2:2.5,opacity:.9,dashArray:pc.net==='GRP'?'6 5':null,interactive:false,grVis:true,grId:pc.id,grNet:pc.net}));
+      const hit=grAdd(g,L.polyline(pc.pts,{weight:HIT,opacity:0,pane:'hit',bubblingMouseEvents:false,grId:pc.id,grNet:pc.net}));
       hit.bindTooltip(()=>esc(grName(pc.id)),{sticky:true});hit.on('click',e=>{L.DomEvent.stop(e);grSelect(pc.id);});});
       restyle();}).catch(()=>{});}}
 map.on('moveend zoomend',()=>grRefresh());
 // --- visibilité
 function applyVis(){try{localStorage.setItem('vis',JSON.stringify(vis));}catch(x){}
-  document.getElementById('vis-gr').checked=vis.gr;document.getElementById('vis-train').checked=vis.train;document.getElementById('vis-hikes').checked=vis.hikes;
+  document.getElementById('vis-gr').checked=vis.gr;document.getElementById('vis-grp').checked=vis.grp;document.getElementById('vis-train').checked=vis.train;grApplyNets();document.getElementById('vis-hikes').checked=vis.hikes;
   [lineBase,lineHi,stHi].forEach(l=>{if(vis.train){if(!map.hasLayer(l))l.addTo(map);}else if(map.hasLayer(l))map.removeLayer(l);});
   if(vis.hikes){if(!map.hasLayer(trackHi))trackHi.addTo(map);}else if(map.hasLayer(trackHi))map.removeLayer(trackHi);
   apply();grRefresh();railRefresh();}
-['gr','train','hikes'].forEach(k=>document.getElementById('vis-'+k).addEventListener('change',e=>{vis[k]=e.target.checked;applyVis();}));
+['gr','grp','train','hikes'].forEach(k=>document.getElementById('vis-'+k).addEventListener('change',e=>{vis[k]=e.target.checked;applyVis();}));
 // --- mode GR : sélection, gares à < 2 km, choix départ/arrivée, itinéraire, GPX
 const gr={sel:null,data:null,stations:[],from:null,to:null,route:null,marks:L.layerGroup().addTo(map)};
 let grReq=0;
