@@ -192,7 +192,9 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
   #list{padding:2px 8px 10px;border-top:1px solid var(--hair)}
   .card{padding:11px 10px}
   .card .ti{font-size:14.5px}
-  .hd{padding:14px 18px 10px}
+  .hd{display:none}
+  .mode-map #detail.show{padding-top:14px}
+  .gr-list{max-height:112px} /* deux gares visibles, le reste au défilement */
   /* onglets en bas de la feuille, sous le pouce */
   .tabs{order:99;margin:0;border:0;border-top:1px solid var(--hair);border-radius:0;background:transparent;padding:8px 14px calc(8px + env(safe-area-inset-bottom,0px))}
   .tabs button{padding:9px 10px;font-size:13.5px}
