@@ -410,6 +410,8 @@ function renderProfileT(t,el=document.getElementById('prof'),onPoint=null){if(!e
     tip.style.display='block';tip.style.left=(fx*100)+'%';tip.textContent=`${(dist/1000).toFixed(1)} km · ${e[i]??'?'} m`;
     if(onPoint)onPoint(pts[i]);else{profMark.clearLayers();L.marker([pts[i][0],pts[i][1]],{icon:L.divIcon({className:'pt-mark',iconSize:[11,11]}),interactive:false}).addTo(profMark);}};
   const hide=()=>{cur.style.opacity=0;tip.style.display='none';if(onPoint)onPoint(null);else profMark.clearLayers();};
+  el._setCursor=dist=>{if(dist==null){hide();return;}const fx=Math.max(0,Math.min(1,dist/tot));let i=0;while(i<d.length-1&&d[i+1]<dist)i++;
+    cur.setAttribute('x1',(fx*W).toFixed(1));cur.setAttribute('x2',(fx*W).toFixed(1));cur.style.opacity=1;tip.style.display='block';tip.style.left=(fx*100)+'%';tip.textContent=`${(dist/1000).toFixed(1)} km · ${e[i]??'?'} m`;};
   svg.addEventListener('mousemove',show);svg.addEventListener('mouseleave',hide);
   svg.addEventListener('touchstart',ev=>{show(ev);ev.preventDefault();},{passive:false});svg.addEventListener('touchmove',ev=>{show(ev);ev.preventDefault();},{passive:false});svg.addEventListener('touchend',hide);}
 function deselect(){profMark.clearLayers();const d=document.getElementById('detail');st.sel=null;trackHi.clearLayers();lineHi.clearLayers();d.classList.remove('show');document.querySelectorAll('.card.on').forEach(c=>c.classList.remove('on'));history.replaceState(null,'',' ');restyle();}
@@ -618,7 +620,7 @@ async function open3d(o){const box=document.getElementById('v3d');box.hidden=fal
   }catch(e){v3dMsg('Vue 3D indisponible : '+(e.message||'WebGL absent'));setTimeout(close3d,2500);}
   v3d._track=o.pts;v3d._bounds=bounds;}
 function close3d(){stopFly();if(v3d){try{v3d.remove();}catch(e){}v3d=null;}document.getElementById('v3d').hidden=true;v3dMsg('');}
-function stopFly(){if(v3dAnim){cancelAnimationFrame(v3dAnim);v3dAnim=null;}}
+function stopFly(){if(v3dAnim){cancelAnimationFrame(v3dAnim);v3dAnim=null;const prof=document.getElementById('v3dprof');if(prof&&prof._setCursor)prof._setCursor(null);}}
 // Survol : la caméra avance à vitesse constante le long du tracé, regarde vers un point 1,5 km devant
 // (le cap est lissé : pas de rotation à chaque virage), et le point courant est dessiné sur le tracé.
 function fly3d(){if(!v3d||!v3d._track)return;stopFly();const P=v3d._track;const d=[0];for(let i=1;i<P.length;i++)d.push(d[i-1]+hv(P[i-1],P[i]));const tot=d[d.length-1];
@@ -626,13 +628,17 @@ function fly3d(){if(!v3d||!v3d._track)return;stopFly();const P=v3d._track;const 
   const az=(a,b)=>{const y=Math.sin((b[1]-a[1])*Math.PI/180)*Math.cos(b[0]*Math.PI/180),x=Math.cos(a[0]*Math.PI/180)*Math.sin(b[0]*Math.PI/180)-Math.sin(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.cos((b[1]-a[1])*Math.PI/180);return (Math.atan2(y,x)*180/Math.PI+360)%360;};
   const wrap=v=>((v+540)%360)-180;
   const cur=v3d.getSource('cur');const DUR=Math.max(20000,tot/1000*2500); // ≥ 20 s, ~2,5 s par km
-  let bearing=az(at(0),at(Math.min(tot,1500)));const t0=performance.now();
-  v3d.jumpTo({center:[at(0)[1],at(0)[0]],bearing,pitch:62,zoom:13.8});
+  // plus le tracé est long, plus la caméra prend de hauteur, vise loin et tourne lentement
+  const L=tot/1000;const AHEAD=Math.max(1000,Math.min(6000,tot*0.08)),K=Math.max(0.004,Math.min(0.02,0.02*(12/Math.max(12,L)))),ZOOM=Math.max(11.6,Math.min(13.8,13.8-Math.log2(Math.max(1,L/12)))),PITCH=L>40?56:62;
+  const prof=document.getElementById('v3dprof');
+  let bearing=az(at(0),at(Math.min(tot,AHEAD)));const t0=performance.now();
+  v3d.jumpTo({center:[at(0)[1],at(0)[0]],bearing,pitch:PITCH,zoom:ZOOM});
   const step=now=>{const f=Math.min(1,(now-t0)/DUR);const x=f*tot;const p=at(x);
-    const ahead=at(Math.min(tot,x+1500));const target=(x+200<tot)?az(p,ahead):bearing;
-    bearing+=wrap(target-bearing)*0.02;                      // lissage : ~1 s pour prendre un nouveau cap
-    v3d.jumpTo({center:[p[1],p[0]],bearing,pitch:62,zoom:13.8});
+    const ahead=at(Math.min(tot,x+AHEAD));const target=(x+200<tot)?az(p,ahead):bearing;
+    bearing+=wrap(target-bearing)*K;                         // lissage proportionnel à la longueur
+    v3d.jumpTo({center:[p[1],p[0]],bearing,pitch:PITCH,zoom:ZOOM});
     if(cur)cur.setData({type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Point',coordinates:[p[1],p[0]]}}]});
+    if(prof&&prof._setCursor)prof._setCursor(x);
     if(f<1)v3dAnim=requestAnimationFrame(step);else v3dAnim=null;};
   v3dAnim=requestAnimationFrame(step);}
 // Sphère d'orientation : on la fait tourner à la souris ou au doigt → azimut (gauche/droite) et inclinaison (haut/bas) de la caméra.
