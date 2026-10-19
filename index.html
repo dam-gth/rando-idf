@@ -614,8 +614,8 @@ async function open3d(o){const box=document.getElementById('v3d');box.hidden=fal
     gr:{type:'geojson',data:{type:'Feature',geometry:{type:'MultiLineString',coordinates:(o.grChains||[]).map(c=>c.map(p=>[p[1],p[0]]))}}},
     cur:{type:'geojson',data:{type:'FeatureCollection',features:[]}},
     ends:{type:'geojson',data:{type:'FeatureCollection',features:[{type:'Feature',properties:{k:'a'},geometry:{type:'Point',coordinates:pts[0]}},{type:'Feature',properties:{k:'b'},geometry:{type:'Point',coordinates:pts[pts.length-1]}}]}}},
-    layers:[{id:'gray',type:'raster',source:'gray'},{id:'shade',type:'raster',source:'shade',paint:{'raster-opacity':.6}},
-      {id:'ign',type:'raster',source:'ign',layout:{visibility:'none'}},{id:'topo',type:'raster',source:'topo',layout:{visibility:'none'}},{id:'photo',type:'raster',source:'photo',layout:{visibility:'none'}},
+    layers:[{id:'gray',type:'raster',source:'gray',paint:{'raster-fade-duration':0}},{id:'shade',type:'raster',source:'shade',paint:{'raster-opacity':.6,'raster-fade-duration':0}},
+      {id:'ign',type:'raster',source:'ign',layout:{visibility:'none'},paint:{'raster-fade-duration':0}},{id:'topo',type:'raster',source:'topo',layout:{visibility:'none'},paint:{'raster-fade-duration':0}},{id:'photo',type:'raster',source:'photo',layout:{visibility:'none'},paint:{'raster-fade-duration':0}},
       {id:'gr',type:'line',source:'gr',paint:{'line-color':css('--gr'),'line-width':2,'line-opacity':.55},layout:{'line-cap':'round','line-join':'round'}},
       {id:'track-casing',type:'line',source:'track',paint:{'line-color':'#fff','line-width':7,'line-opacity':.9},layout:{'line-cap':'round','line-join':'round'}},
       {id:'track',type:'line',source:'track',paint:{'line-color':TRACK,'line-width':3.5},layout:{'line-cap':'round','line-join':'round'}},
@@ -641,7 +641,7 @@ async function open3d(o){const box=document.getElementById('v3d');box.hidden=fal
   }catch(e){v3dMsg('Vue 3D indisponible : '+(e.message||'WebGL absent'));setTimeout(close3d,2500);}
   v3d._track=o.pts;v3d._bounds=bounds;}
 function close3d(){stopFly();if(v3d){try{v3d.remove();}catch(e){}v3d=null;}document.getElementById('v3d').hidden=true;v3dMsg('');}
-function stopFly(){flyReq++;document.getElementById('v3dspeed').hidden=true;if(v3dAnim){cancelAnimationFrame(v3dAnim);v3dAnim=null;const prof=document.getElementById('v3dprof');if(prof&&prof._setCursor)prof._setCursor(null);}}
+function stopFly(){flyReq++;if(v3d)try{v3d.setSourceTileLodParams(9.314,3);}catch(e){}document.getElementById('v3dspeed').hidden=true;if(v3dAnim){cancelAnimationFrame(v3dAnim);v3dAnim=null;const prof=document.getElementById('v3dprof');if(prof&&prof._setCursor)prof._setCursor(null);}}
 // Survol : la caméra avance à vitesse constante le long du tracé, regarde vers un point 1,5 km devant
 // (le cap est lissé : pas de rotation à chaque virage), et le point courant est dessiné sur le tracé.
 // Préchargement avant survol : on met en cache HTTP les tuiles (fond, ombrage, altitude) d'un couloir autour du tracé,
@@ -652,14 +652,14 @@ const TPL={gray:['https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/Wo
   topo:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}'],
   photo:['https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg']};
 const DEM_TPL='https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
-async function preload3d(P,ZOOM,onProgress){const Z=Math.round(ZOOM);const urls=new Set();
+async function preload3d(P,ZOOM,onProgress){const Z=Math.round(ZOOM)+1;const urls=new Set();
   const add=(tpl,z,x,y)=>urls.add(tpl.replace('{z}',z).replace('{x}',x).replace('{y}',y));
   let acc=0;for(let i=0;i<P.length;i++){if(i&&(acc+=hv(P[i-1],P[i]))<250)continue;acc=0;
-    for(const z of [Z,Z-1]){const [tx,ty]=tileXY(P[i][0],P[i][1],z);const r=z===Z?1:0;
+    for(const z of [Z,Z-1]){const [tx,ty]=tileXY(P[i][0],P[i][1],z);const r=z===Z?2:1;
       for(let dx=-r;dx<=r;dx++)for(let dy=-r;dy<=r;dy++){(TPL[base3d]||TPL.gray).forEach(t=>add(t,z,tx+dx,ty+dy));if(z<=15)add(DEM_TPL,z,tx+dx,ty+dy);}}
     const [dx3,dy3]=tileXY(P[i][0],P[i][1],Z-2);add(DEM_TPL,Z-2,dx3,dy3);}
-  const list=[...urls].slice(0,900);let done=0;const N=list.length;if(!N)return;
-  const one=u=>new Promise(res=>{const im=new Image();im.onload=im.onerror=()=>{done++;onProgress(done/N);res();};im.src=u;});
+  const list=[...urls].slice(0,1500);let done=0;const N=list.length;if(!N)return;
+  const one=u=>new Promise(res=>{const im=new Image();im.crossOrigin='anonymous';im.onload=im.onerror=()=>{done++;onProgress(done/N);res();};im.src=u;});
   const workers=[];for(let k=0;k<8;k++)workers.push((async()=>{while(list.length)await one(list.shift());})());
   await Promise.all(workers);}
 let flyReq=0;
@@ -672,7 +672,7 @@ async function fly3d(){if(!v3d||!v3d._track)return;stopFly();const P=v3d._track;
   const L=tot/1000;const AHEAD=Math.max(1000,Math.min(6000,tot*0.08)),K=Math.max(0.004,Math.min(0.02,0.02*(12/Math.max(12,L)))),ZOOM=Math.max(11.6,Math.min(13.8,13.8-Math.log2(Math.max(1,L/12)))),PITCH=L>40?56:62;
   const prof=document.getElementById('v3dprof');
   v3dMsg('Préchargement des tuiles… 0 %');try{await preload3d(P,ZOOM,f=>{if(my===flyReq)v3dMsg('Préchargement des tuiles… '+Math.round(f*100)+' %');});}catch(e){}
-  if(my!==flyReq||!v3d)return;v3dMsg('');
+  if(my!==flyReq||!v3d)return;v3dMsg('');try{v3d.setSourceTileLodParams(2,10);}catch(e){}
   let bearing=az(at(0),at(Math.min(tot,AHEAD)));let x=0,last=performance.now();const base=tot/DUR; // m par ms à ×1
   v3d.jumpTo({center:[at(0)[1],at(0)[0]],bearing,pitch:PITCH,zoom:ZOOM});document.getElementById('v3dspeed').hidden=false;
   const step=now=>{x=Math.min(tot,x+(now-last)*base*flySpeed);last=now;const f=x/tot;const p=at(x);
