@@ -171,7 +171,7 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
 .start-mark{width:12px;height:12px;border-radius:50%;background:var(--track);border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
 .leaflet-layer.shade{mix-blend-mode:multiply;opacity:.6}
 /* vue 3D plein écran */
-#v3d{position:fixed;inset:0;z-index:900;background:var(--bg)}
+#v3d{position:fixed;inset:0;z-index:1200;background:var(--bg)}
 #v3d[hidden]{display:none}
 #v3dmap{position:absolute;inset:0}
 #v3dbar{position:absolute;z-index:2;right:max(12px,env(safe-area-inset-right,0px));top:max(12px,env(safe-area-inset-top,0px));display:flex;gap:6px;padding:4px}
@@ -183,9 +183,10 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
 #v3dmsg[hidden]{display:none}
 .maplibregl-ctrl-attrib{font-size:10px!important}
 .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group{margin:0 max(12px,env(safe-area-inset-right,0px)) 56px 0;border-radius:12px;box-shadow:var(--shadow)}
-#v3dorbbox{position:absolute;z-index:2;right:max(12px,env(safe-area-inset-right,0px));bottom:max(140px,calc(env(safe-area-inset-bottom,0px) + 140px));padding:6px;border-radius:50%;cursor:grab;touch-action:none}
+#v3dorbbox{position:absolute;z-index:2;right:max(16px,env(safe-area-inset-right,0px));bottom:max(16px,calc(env(safe-area-inset-bottom,0px) + 16px));padding:0;border:0;background:transparent;box-shadow:none;border-radius:50%;cursor:grab;touch-action:none}
+@media (max-width:760px){#v3dorbbox{display:none}}
 #v3dorbbox:active{cursor:grabbing}
-#v3dorb{display:block;width:88px;height:88px}
+#v3dorb{display:block;width:96px;height:96px;filter:drop-shadow(0 6px 14px rgba(0,0,0,.25))}
 .maplibregl-ctrl-group button{width:34px!important;height:34px!important}
 #v3dinfo{max-width:min(420px,calc(100% - 90px))}
 .leaflet-layer.tamed{filter:saturate(.3) brightness(1.06) contrast(.92)}
@@ -606,7 +607,7 @@ async function open3d(o){const box=document.getElementById('v3d');box.hidden=fal
     v3d.on('error',e=>{if(e&&e.error&&/WebGL/i.test(String(e.error.message||e.error)))v3dMsg('Vue 3D indisponible : WebGL absent.');});
     ['mousedown','touchstart','wheel'].forEach(ev=>v3d.getCanvas().addEventListener(ev,stopFly,{passive:true}));
     // boussole : glisser dessus tourne et incline la vue (souris) ; zoom ± ; sur Mac, Ctrl + glisser sur la carte fait pareil
-    v3d.addControl(new M.NavigationControl({showZoom:true,showCompass:false}),'bottom-right');v3d.on('move',orbDraw);v3d.on('load',orbDraw);
+    v3d.on('move',orbDraw);v3d.on('load',orbDraw);
   }catch(e){v3dMsg('Vue 3D indisponible : '+(e.message||'WebGL absent'));setTimeout(close3d,2500);}
   v3d._track=o.pts;v3d._bounds=bounds;}
 function close3d(){stopFly();if(v3d){try{v3d.remove();}catch(e){}v3d=null;}document.getElementById('v3d').hidden=true;v3dMsg('');}
@@ -625,8 +626,12 @@ function fly3d(){if(!v3d||!v3d._track)return;stopFly();const P=v3d._track;const 
 const orb=document.getElementById('v3dorb'),orbC=orb.getContext('2d');
 function orbDraw(){if(!v3d)return;const W=orb.width,R=W/2-6,cx=W/2,cy=W/2;const b=v3d.getBearing()*Math.PI/180,p=v3d.getPitch()*Math.PI/180;
   orbC.clearRect(0,0,W,W);const dark=matchMedia('(prefers-color-scheme: dark)').matches;
-  const g=orbC.createRadialGradient(cx-R*.35,cy-R*.35,R*.1,cx,cy,R);g.addColorStop(0,dark?'#5b6672':'#ffffff');g.addColorStop(1,dark?'#1f262c':'#9aa3ad');
+  // bille de verre : fond translucide, ombre interne vers le bord, reflet en haut à gauche, liseré clair
+  const g=orbC.createRadialGradient(cx-R*.3,cy-R*.3,R*.05,cx,cy,R);g.addColorStop(0,dark?'rgba(255,255,255,.28)':'rgba(255,255,255,.75)');g.addColorStop(.6,dark?'rgba(120,140,160,.22)':'rgba(190,205,220,.35)');g.addColorStop(1,dark?'rgba(20,30,40,.6)':'rgba(60,80,100,.45)');
   orbC.beginPath();orbC.arc(cx,cy,R,0,Math.PI*2);orbC.fillStyle=g;orbC.fill();
+  orbC.lineWidth=1.5;orbC.strokeStyle=dark?'rgba(255,255,255,.35)':'rgba(255,255,255,.9)';orbC.stroke();
+  const hl=orbC.createRadialGradient(cx-R*.38,cy-R*.45,0,cx-R*.38,cy-R*.45,R*.5);hl.addColorStop(0,'rgba(255,255,255,.85)');hl.addColorStop(1,'rgba(255,255,255,0)');
+  orbC.beginPath();orbC.ellipse(cx-R*.38,cy-R*.45,R*.42,R*.28,-0.6,0,Math.PI*2);orbC.fillStyle=hl;orbC.fill();
   // projection d'un point de la sphère (lon λ autour de l'axe vertical, lat φ) après rotation azimut b puis inclinaison p
   const P=(lam,phi)=>{let x=Math.cos(phi)*Math.sin(lam-b),y=Math.sin(phi),z=Math.cos(phi)*Math.cos(lam-b);
     const y2=y*Math.cos(p)-z*Math.sin(p),z2=y*Math.sin(p)+z*Math.cos(p);return [cx+x*R,cy-y2*R,z2];};
