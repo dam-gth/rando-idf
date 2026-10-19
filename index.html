@@ -141,7 +141,7 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
 .gr-badge{display:inline-flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .gr-badge span{font-size:11px;font-weight:600;border:1px solid var(--hair);border-radius:5px;padding:1px 7px;color:var(--muted)}
 .gr-badge span.ok{color:var(--gr)}
-.gr-warn{font-size:12px;color:#b45309;margin-top:4px}
+.gr-warn{font-size:12.5px;line-height:1.4;color:var(--fg);background:rgba(245,158,11,.16);border-left:3px solid #d97706;border-radius:8px;padding:7px 10px;margin-top:8px}
 .gr-busy{font-size:12.5px;color:var(--muted);margin-top:8px;display:flex;align-items:center;gap:8px}
 .gr-busy i{width:12px;height:12px;border:2px solid var(--hair2);border-top-color:var(--tl);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -512,7 +512,7 @@ async function grCompute(){const my=grReq;const A=gr.from,B=gr.to;
     const sameChain=A.n.ci===B.n.ci;let mid,warn='';
     if(sameChain){const c=gr.data.chains[A.n.ci];let i0=A.n.si+1,i1=B.n.si;const fwd=(A.n.si+A.n.t)<=(B.n.si+B.n.t);
       mid=fwd?[A.n.pt,...c.slice(A.n.si+1,B.n.si+1),B.n.pt]:[A.n.pt,...c.slice(B.n.si+1,A.n.si+1).reverse(),B.n.pt];}
-    else{mid=await brouter(A.n.pt,B.n.pt);warn='Les deux gares touchent des tronçons différents du GR : la partie centrale est routée au plus près du GR, sans garantie.';}
+    else{mid=await brouter(A.n.pt,B.n.pt);warn='Les deux gares ne sont pas sur le même tronçon du GR. Entre elles, l\'itinéraire est calculé au plus près du GR, sans garantie de le suivre.';}
     const [leg1,leg2]=await Promise.all([brouter([A.s.lat,A.s.lon],A.n.pt),brouter(B.n.pt,[B.s.lat,B.s.lon])]);
     if(my!==grReq)return;
     let pts=[...leg1,...mid,...leg2].filter((p,i,a)=>i===0||hv(p,a[i-1])>1);
