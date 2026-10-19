@@ -642,10 +642,29 @@ async function open3d(o){const box=document.getElementById('v3d');box.hidden=fal
   }catch(e){v3dMsg('Vue 3D indisponible : '+(e.message||'WebGL absent'));setTimeout(close3d,2500);}
   v3d._track=o.pts;v3d._bounds=bounds;}
 function close3d(){stopFly();if(v3d){try{v3d.remove();}catch(e){}v3d=null;}document.getElementById('v3d').hidden=true;v3dMsg('');}
-function stopFly(){document.getElementById('v3dspeed').hidden=true;if(v3dAnim){cancelAnimationFrame(v3dAnim);v3dAnim=null;const prof=document.getElementById('v3dprof');if(prof&&prof._setCursor)prof._setCursor(null);}}
+function stopFly(){flyReq++;document.getElementById('v3dspeed').hidden=true;if(v3dAnim){cancelAnimationFrame(v3dAnim);v3dAnim=null;const prof=document.getElementById('v3dprof');if(prof&&prof._setCursor)prof._setCursor(null);}}
 // Survol : la caméra avance à vitesse constante le long du tracé, regarde vers un point 1,5 km devant
 // (le cap est lissé : pas de rotation à chaque virage), et le point courant est dessiné sur le tracé.
-function fly3d(){if(!v3d||!v3d._track)return;stopFly();const P=v3d._track;const d=[0];for(let i=1;i<P.length;i++)d.push(d[i-1]+hv(P[i-1],P[i]));const tot=d[d.length-1];
+// Préchargement avant survol : on met en cache HTTP les tuiles (fond, ombrage, altitude) d'un couloir autour du tracé,
+// aux zooms que la caméra va utiliser, pour que le vol ne montre pas de tuiles manquantes.
+function tileXY(lat,lon,z){const n=2**z;return [Math.floor((lon+180)/360*n),Math.floor((1-Math.log(Math.tan(lat*Math.PI/180)+1/Math.cos(lat*Math.PI/180))/Math.PI)/2*n)];}
+const TPL={gray:['https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}','https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}'],
+  ign:['https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png','https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}'],
+  topo:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}'],
+  photo:['https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg']};
+const DEM_TPL='https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
+async function preload3d(P,ZOOM,onProgress){const Z=Math.round(ZOOM);const urls=new Set();
+  const add=(tpl,z,x,y)=>urls.add(tpl.replace('{z}',z).replace('{x}',x).replace('{y}',y));
+  let acc=0;for(let i=0;i<P.length;i++){if(i&&(acc+=hv(P[i-1],P[i]))<250)continue;acc=0;
+    for(const z of [Z,Z-1]){const [tx,ty]=tileXY(P[i][0],P[i][1],z);const r=z===Z?1:0;
+      for(let dx=-r;dx<=r;dx++)for(let dy=-r;dy<=r;dy++){(TPL[base3d]||TPL.gray).forEach(t=>add(t,z,tx+dx,ty+dy));if(z<=15)add(DEM_TPL,z,tx+dx,ty+dy);}}
+    const [dx3,dy3]=tileXY(P[i][0],P[i][1],Z-2);add(DEM_TPL,Z-2,dx3,dy3);}
+  const list=[...urls].slice(0,900);let done=0;const N=list.length;if(!N)return;
+  const one=u=>new Promise(res=>{const im=new Image();im.onload=im.onerror=()=>{done++;onProgress(done/N);res();};im.src=u;});
+  const workers=[];for(let k=0;k<8;k++)workers.push((async()=>{while(list.length)await one(list.shift());})());
+  await Promise.all(workers);}
+let flyReq=0;
+async function fly3d(){if(!v3d||!v3d._track)return;stopFly();const P=v3d._track;const my=++flyReq;const d=[0];for(let i=1;i<P.length;i++)d.push(d[i-1]+hv(P[i-1],P[i]));const tot=d[d.length-1];
   const at=x=>{x=Math.max(0,Math.min(tot,x));let i=0;while(i<d.length-2&&d[i+1]<x)i++;const t=(x-d[i])/Math.max(1,d[i+1]-d[i]);return [P[i][0]+(P[i+1][0]-P[i][0])*t,P[i][1]+(P[i+1][1]-P[i][1])*t];};
   const az=(a,b)=>{const y=Math.sin((b[1]-a[1])*Math.PI/180)*Math.cos(b[0]*Math.PI/180),x=Math.cos(a[0]*Math.PI/180)*Math.sin(b[0]*Math.PI/180)-Math.sin(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.cos((b[1]-a[1])*Math.PI/180);return (Math.atan2(y,x)*180/Math.PI+360)%360;};
   const wrap=v=>((v+540)%360)-180;
@@ -653,6 +672,8 @@ function fly3d(){if(!v3d||!v3d._track)return;stopFly();const P=v3d._track;const 
   // plus le tracé est long, plus la caméra prend de hauteur, vise loin et tourne lentement
   const L=tot/1000;const AHEAD=Math.max(1000,Math.min(6000,tot*0.08)),K=Math.max(0.004,Math.min(0.02,0.02*(12/Math.max(12,L)))),ZOOM=Math.max(11.6,Math.min(13.8,13.8-Math.log2(Math.max(1,L/12)))),PITCH=L>40?56:62;
   const prof=document.getElementById('v3dprof');
+  v3dMsg('Préchargement des tuiles… 0 %');try{await preload3d(P,ZOOM,f=>{if(my===flyReq)v3dMsg('Préchargement des tuiles… '+Math.round(f*100)+' %');});}catch(e){}
+  if(my!==flyReq||!v3d)return;v3dMsg('');
   let bearing=az(at(0),at(Math.min(tot,AHEAD)));let x=0,last=performance.now();const base=tot/DUR; // m par ms à ×1
   v3d.jumpTo({center:[at(0)[1],at(0)[0]],bearing,pitch:PITCH,zoom:ZOOM});document.getElementById('v3dspeed').hidden=false;
   const step=now=>{x=Math.min(tot,x+(now-last)*base*flySpeed);last=now;const f=x/tot;const p=at(x);
