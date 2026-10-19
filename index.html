@@ -112,8 +112,8 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
 #detail .x:hover{background:var(--fill)}
 /* Calques : un bouton, un menu déroulant avec les fonds de carte */
 #basemap{position:absolute;z-index:600;right:max(16px,env(safe-area-inset-right,0px));top:max(16px,env(safe-area-inset-top,0px));display:flex;flex-direction:column;align-items:flex-end;gap:6px;background:transparent;border:0;box-shadow:none}
-#lay{display:inline-flex;align-items:center;gap:6px;border:0;padding:7px 12px;border-radius:12px;font:inherit;font-size:12.5px;font-weight:500;color:var(--fg);cursor:pointer}
-#lay svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linejoin:round}
+#lay{display:inline-flex;align-items:center;justify-content:center;border:0;width:38px;height:38px;border-radius:12px;color:var(--fg);cursor:pointer}
+#lay svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linejoin:round}
 #lay[aria-expanded=true]{background:var(--on);color:var(--on-fg)}
 #laymenu{display:flex;flex-direction:column;padding:4px;min-width:150px}
 #laymenu[hidden]{display:none}
@@ -195,7 +195,7 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
   <div id="list"></div>
   <div id="detail"></div>
 </aside>
-<div id="basemap"><button id="lay" class="glass" type="button" aria-expanded="false" aria-controls="laymenu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg>Calques</button>
+<div id="basemap"><button id="lay" class="glass" type="button" aria-label="Calques" title="Calques" aria-expanded="false" aria-controls="laymenu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg></button>
 <div id="laymenu" class="glass" role="menu" hidden>
 <button type="button" role="menuitemradio" data-b="gray" aria-pressed="true"><span>Gris<small>Esri, neutre</small></span></button>
 <button type="button" role="menuitemradio" data-b="ign" aria-pressed="false"><span>Plan IGN<small>courbes de niveau, sentiers</small></span></button>
