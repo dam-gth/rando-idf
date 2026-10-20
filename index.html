@@ -182,6 +182,8 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
 .st-lbl{background:var(--glass2);color:var(--fg);border-radius:8px;padding:3px 8px;font-size:11.5px;font-weight:600;white-space:nowrap;box-shadow:var(--shadow);border:1px solid var(--hair)}
 .st-mark{background:transparent;border:0}
 .start-mark{width:12px;height:12px;border-radius:50%;background:var(--track);border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.via-pin{width:18px;height:18px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#2563EB;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);cursor:grab}
+.gr-hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.35}
 .leaflet-layer.shade{mix-blend-mode:multiply;opacity:.6}
 /* vue 3D plein écran */
 #v3d{position:fixed;inset:0;z-index:1200;background:var(--bg)}
@@ -444,7 +446,7 @@ function renderProfileT(t,el=document.getElementById('prof'),onPoint=null){if(!e
   svg.addEventListener('mousemove',show);svg.addEventListener('mouseleave',hide);
   svg.addEventListener('touchstart',ev=>{show(ev);ev.preventDefault();},{passive:false});svg.addEventListener('touchmove',ev=>{show(ev);ev.preventDefault();},{passive:false});svg.addEventListener('touchend',hide);}
 function deselect(){profMark.clearLayers();const d=document.getElementById('detail');st.sel=null;trackHi.clearLayers();lineHi.clearLayers();d.classList.remove('show');document.querySelectorAll('.card.on').forEach(c=>c.classList.remove('on'));history.replaceState(null,'',' ');restyle();}
-map.on('click',()=>{if(st.sel!==null)deselect();else if(gr.sel!==null&&!gr.from)grReset();});
+map.on('click',e=>{if(st.sel!==null)deselect();else if(gr.sel!==null&&gr.from&&gr.to)grPinSet(e.latlng);else if(gr.sel!==null&&!gr.from)grReset();});
 function select(n){if(gr.sel!==null)grReset();st.sel=n;const r=byN[n],t=T[n],a=TR.access[n]||{};
   trackHi.clearLayers();lineHi.clearLayers();
   L.polyline(t.pts,{color:'#fff',weight:9,opacity:.95}).addTo(trackHi);
@@ -516,9 +518,9 @@ function applyVis(){try{localStorage.setItem('vis',JSON.stringify(vis));}catch(x
   apply();grRefresh();railRefresh();}
 ['gr','grp','train','hikes'].forEach(k=>document.getElementById('vis-'+k).addEventListener('change',e=>{vis[k]=e.target.checked;applyVis();}));
 // --- mode GR : sélection, gares à < 2 km, choix départ/arrivée, itinéraire, GPX
-const gr={sel:null,data:null,branches:[],ref:null,stations:[],from:null,to:null,route:null,marks:L.layerGroup().addTo(map),pick:L.layerGroup().addTo(map)};
+const gr={sel:null,data:null,branches:[],ref:null,via:null,pin:null,stations:[],from:null,to:null,route:null,marks:L.layerGroup().addTo(map),pick:L.layerGroup().addTo(map)};
 let grReq=0;
-function grReset(){document.body.classList.remove('gr-on');gr.sel=null;gr.data=null;gr.branches=[];gr.ref=null;gr.stations=[];gr.from=null;gr.to=null;gr.route=null;grReq++;
+function grReset(){document.body.classList.remove('gr-on');gr.sel=null;gr.data=null;gr.branches=[];gr.ref=null;grPinClear();gr.stations=[];gr.from=null;gr.to=null;gr.route=null;grReq++;
   grHi.clearLayers();grRoute.clearLayers();gr.marks.clearLayers();gr.pick.clearLayers();profMark.clearLayers();
   const d=document.getElementById('detail');d.classList.remove('show');d.innerHTML='';history.replaceState(null,'',' ');restyle();}
 async function grSelect(id){if(st.sel!==null)deselect();grReset();gr.sel=id;document.body.classList.add('gr-on');const my=++grReq;
@@ -583,13 +585,19 @@ function grRefStep(){const A=gr.from,B=gr.to;const ra=A.n.rel||gr.data,rb=B.n.re
   const M=gr.data,viaMain=ra!==M&&rb!==M;
   const opts=[{k:'combo',t:viaMain?`${esc(grLbl(ra))}, ${esc(grLbl(M))} puis ${esc(grLbl(rb))}`:`${esc(grLbl(ra))} puis ${esc(grLbl(rb))}`,s:viaMain?'par les croisements avec le GR principal':'par le croisement des deux GR'},{k:'a',t:`Suivre ${esc(grLbl(ra))}`,s:`rejoindre ${esc(B.s.name)} depuis ce GR`},{k:'b',t:`Suivre ${esc(grLbl(rb))}`,s:`rejoindre ${esc(A.s.name)} depuis ce GR`}];
   if(viaMain)opts.push({k:'m',t:`Suivre ${esc(grLbl(M))}`,s:'rejoindre les deux gares depuis le GR principal'});
-  grPanel(`<div class="gr-steps"><div class="gr-step">${esc(A.s.name)} → ${esc(B.s.name)}</div><div class="gr-step"><b>3.</b> Quel GR suivre ? <small>Touche un GR sur la carte, ou choisis :</small></div><div class="gr-list">${opts.map(o=>`<button type="button" data-k="${o.k}"><span>${o.t}<small>${o.s}</small></span></button>`).join('')}</div><div class="gr-actions"><button type="button" id="gr-new">${icoSw}Autres gares</button></div></div>`);
-  const go=ref=>{gr.pick.clearLayers();gr.ref=ref;grCompute();};
+  grPanel(`<div class="gr-steps"><div class="gr-step">${esc(A.s.name)} → ${esc(B.s.name)}</div><div class="gr-step"><b>3.</b> Quel GR suivre ? <small>Pose un point sur la carte : le tracé passera par là en suivant le GR le plus proche. Ou choisis :</small></div><div class="gr-list">${opts.map(o=>`<button type="button" data-k="${o.k}"><span>${o.t}<small>${o.s}</small></span></button>`).join('')}</div><div class="gr-actions"><button type="button" id="gr-new">${icoSw}Autres gares</button></div></div>`);
+  const go=ref=>{gr.ref=ref;grCompute();};
   document.querySelectorAll('#detail .gr-list button').forEach(b=>b.onclick=()=>{const k=b.dataset.k;go(k==='combo'?{mode:'combo',ra,rb}:{mode:'single',rel:k==='a'?ra:k==='b'?rb:gr.data});});
-  document.getElementById('gr-new').onclick=()=>{gr.pick.clearLayers();gr.from=null;gr.to=null;gr.ref=null;grStep();};
-  // au toucher : zones larges invisibles sur le GR principal et les GR voisins ; toucher un GR = le suivre
-  gr.pick.clearLayers();[gr.data,...gr.branches.map(b=>b.d)].forEach(rel=>rel.chains.forEach(c=>{const l=L.polyline(c,{color:'#000',opacity:0,weight:22,interactive:true,bubblingMouseEvents:false,pane:'grpick'}).addTo(gr.pick);
-    l.bindTooltip('Suivre '+esc(grLbl(rel)),{sticky:true});l.on('click',e=>{L.DomEvent.stop(e);go({mode:'single',rel});});}));}
+  document.getElementById('gr-new').onclick=()=>{gr.from=null;gr.to=null;gr.ref=null;grPinClear();grStep();};}
+// point de passage : pin posé sur la carte, accroché au GR (principal ou voisin) le plus proche ; le tracé suit ce GR en passant par là
+function grPinClear(){gr.via=null;if(gr.pin){map.removeLayer(gr.pin);gr.pin=null;}}
+function grPinSet(ll){if(!gr.data)return;const p=[ll.lat,ll.lng];let best=null;[gr.data,...gr.branches.map(b=>b.d)].forEach(rel=>{const n=grNearAny(rel,p);if(n&&(!best||n.d<best.n.d))best={rel,n};});
+  if(!best||best.n.d>3000){grToast('Aucun GR à moins de 3 km de ce point.');return;}
+  gr.via=best;if(!gr.pin){gr.pin=L.marker(best.n.pt,{draggable:true,icon:L.divIcon({className:'via-pin',iconSize:[18,18],iconAnchor:[2,18]}),zIndexOffset:1000}).addTo(map);
+    gr.pin.on('dragend',()=>grPinSet(gr.pin.getLatLng()));gr.pin.on('click',e=>{L.DomEvent.stop(e);grPinClear();gr.ref=null;if((gr.from.n.rel||null)!==(gr.to.n.rel||null))grRefStep();else grCompute();});}
+  gr.pin.setLatLng(best.n.pt);gr.pin.bindTooltip('Passe par '+esc(grLbl(best.rel))+' · toucher pour retirer');
+  gr.ref={mode:'single',rel:best.rel,via:best.n};grCompute();}
+function grToast(t){const d=document.getElementById('detail');let w=d.querySelector('.gr-toast');if(!w){w=document.createElement('div');w.className='gr-warn gr-toast';d.appendChild(w);}w.textContent=t;setTimeout(()=>w.remove(),3000);}
 // tronçon exact d'un GR entre deux points accrochés (même chaîne), sinon null
 function grNearAny(rel,p){const f=rel===gr.data?gr.near:rel.near;const n=f(p);if(n)return n;let best=null;
   rel.chains.forEach((c,ci)=>{for(let si=0;si<c.length-1;si++){const [d,t]=perpT(p,c[si],c[si+1]);if(!best||d<best.d)best={d,ci,si,t,pt:[c[si][0]+(c[si+1][0]-c[si][0])*t,c[si][1]+(c[si+1][1]-c[si][1])*t]};}});return best;}
@@ -643,7 +651,8 @@ async function grCompute(){const my=grReq;const A=gr.from,B=gr.to;
     const nearOf=rel=>p=>grNearAny(rel,p);
     if(gr.ref&&gr.ref.mode==='single'){// un seul GR de référence : les deux gares y sont accrochées, tronçon exact si même chaîne
       const R=gr.ref.rel,na=nearOf(R)([A.s.lat,A.s.lon]),nb=nearOf(R)([B.s.lat,B.s.lon]);pa=na.pt;pb=nb.pt;refLbl=grLbl(R);
-      mid=grSeg(R,na,nb);if(!mid){mid=await brouter(pa,pb);warn=`Les deux gares ne sont pas sur le même tronçon du ${esc(grLbl(R))}. ${off}`;}midParts=[mid];}
+      const V=gr.ref.via;if(V){let m1=grSeg(R,na,V),m2=grSeg(R,V,nb);const miss=[];if(!m1){m1=await brouter(pa,V.pt);miss.push(1);}if(!m2){m2=await brouter(V.pt,pb);miss.push(1);}midParts=[m1,m2];mid=midParts.flat();refLbl+=' (par le point posé)';if(miss.length)warn=`Le point posé n'est pas sur le même tronçon du ${esc(grLbl(R))} que les gares. ${off}`;}
+      else{mid=grSeg(R,na,nb);if(!mid){mid=await brouter(pa,pb);warn=`Les deux gares ne sont pas sur le même tronçon du ${esc(grLbl(R))}. ${off}`;}midParts=[mid];}}
     else if(gr.ref&&gr.ref.mode==='combo'){// GR A jusqu'au croisement, puis GR B
       const {ra,rb}=gr.ref;const M=gr.data;const na=nearOf(ra)([A.s.lat,A.s.lon]),nb=nearOf(rb)([B.s.lat,B.s.lon]);pa=na.pt;pb=nb.pt;
       const jl=r=>r===M?null:(r.jns||[{pt:r.jpt,onMain:r.jn}]);// croisements d'une branche avec le GR principal
@@ -683,10 +692,11 @@ async function grCompute(){const my=grReq;const A=gr.from,B=gr.to;
     ${refLbl?`<div class="m">Suit ${esc(refLbl)}</div>`:''}${warn?`<div class="gr-warn">${warn}</div>`:''}
     <div class="prof" id="prof"></div><div class="bars" id="bars"></div>
     <div class="gr-actions"><button type="button" class="pri" id="gr-dl">${icoDl}GPX</button><button type="button" id="gr-3d">${ico3d}3D</button><button type="button" id="gr-new">${icoSw}Autres gares</button>${gr.ref?`<button type="button" id="gr-ref">Autre GR</button>`:''}</div>
+    <div class="gr-hint">${gr.via?'Point de passage posé (toucher le pin pour le retirer).':'Touche la carte pour forcer le tracé par un point.'}</div>
     <div class="go" id="go"></div>`);
     renderProfileT({pts:tpts,dpm});renderBars(bars,document.getElementById('bars'));renderGoS(A.s,B.s);
-    document.getElementById('gr-dl').onclick=grGpx;document.getElementById('gr-3d').onclick=()=>open3d({pts:tpts,name:`${(gr.data&&gr.data.ref)||'GR'} · ${A.s.name} → ${B.s.name}`,km:+(km/1000).toFixed(1),dpm,bars,grChains:gr.data&&gr.data.chains});document.getElementById('gr-new').onclick=()=>{gr.from=null;gr.to=null;gr.ref=null;gr.route=null;grRoute.clearLayers();profMark.clearLayers();grHi.eachLayer(l=>l.setStyle({opacity:1}));grStep();};
-    const rb=document.getElementById('gr-ref');if(rb)rb.onclick=()=>{gr.route=null;grRoute.clearLayers();profMark.clearLayers();grHi.eachLayer(l=>l.setStyle({opacity:1}));grRefStep();};
+    document.getElementById('gr-dl').onclick=grGpx;document.getElementById('gr-3d').onclick=()=>open3d({pts:tpts,name:`${(gr.data&&gr.data.ref)||'GR'} · ${A.s.name} → ${B.s.name}`,km:+(km/1000).toFixed(1),dpm,bars,grChains:gr.data&&gr.data.chains});document.getElementById('gr-new').onclick=()=>{gr.from=null;gr.to=null;gr.ref=null;grPinClear();gr.route=null;grRoute.clearLayers();profMark.clearLayers();grHi.eachLayer(l=>l.setStyle({opacity:1}));grStep();};
+    const rb=document.getElementById('gr-ref');if(rb)rb.onclick=()=>{gr.route=null;grPinClear();grRoute.clearLayers();profMark.clearLayers();grHi.eachLayer(l=>l.setStyle({opacity:1}));grRefStep();};
   }catch(e){if(my!==grReq)return;grPanel(`<div class="gr-step">${esc(A.s.name)} → ${esc(B.s.name)}</div><div class="gr-warn">Routage indisponible (${esc(e.message||e)}). Réessaie dans une minute.</div><div class="gr-actions"><button type="button" class="pri" id="gr-retry">Réessayer</button><button type="button" id="gr-new">Autres gares</button></div>`);
     document.getElementById('gr-retry').onclick=grCompute;document.getElementById('gr-new').onclick=()=>{gr.from=null;gr.to=null;grStep();};}}
 function grLbl(d){return d?(d.ref||d.name||'GR'):'GR';}
