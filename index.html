@@ -59,7 +59,7 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
 #gsearch{margin:0 18px 12px;display:none}
 .mode-map #gsearch{display:block}
 #panel:has(#detail.show) #gsearch{display:none}
-.sug{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:5;background:var(--glass2);-webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px);border:1px solid var(--hair);border-radius:11px;box-shadow:var(--shadow);overflow:hidden;max-height:300px;overflow-y:auto}
+.sug{margin-top:6px;background:var(--fill);border:1px solid var(--hair);border-radius:11px;overflow:hidden;max-height:300px;overflow-y:auto}
 .sug button{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;color:var(--fg);padding:9px 12px;font:inherit;font-size:13px;text-align:left;cursor:pointer}
 .sug button:hover,.sug button.on{background:var(--fill)}
 .sug button small{display:block;color:var(--muted);font-size:11.5px}
