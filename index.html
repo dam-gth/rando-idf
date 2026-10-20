@@ -572,9 +572,11 @@ function grStep(){grMarks();const lst=(items,cls)=>`<div class="gr-list">${items
 function grPick(x){if(!gr.from){gr.from=x;grStep();}else if(!gr.to&&x!==gr.from){gr.to=x;grMarks();gr.ref=null;if((gr.from.n.rel||null)!==(gr.to.n.rel||null))grRefStep();else grCompute();}}
 // Les deux gares sont sur des GR différents : quel GR l'itinéraire doit-il suivre ?
 function grRefStep(){const A=gr.from,B=gr.to;const ra=A.n.rel||gr.data,rb=B.n.rel||gr.data;
-  const opts=[{k:'combo',t:`${esc(grLbl(ra))} puis ${esc(grLbl(rb))}`,s:'par le croisement des deux GR'},{k:'a',t:`Suivre ${esc(grLbl(ra))}`,s:`rejoindre ${esc(B.s.name)} depuis ce GR`},{k:'b',t:`Suivre ${esc(grLbl(rb))}`,s:`rejoindre ${esc(A.s.name)} depuis ce GR`}];
+  const M=gr.data,viaMain=ra!==M&&rb!==M;
+  const opts=[{k:'combo',t:viaMain?`${esc(grLbl(ra))}, ${esc(grLbl(M))} puis ${esc(grLbl(rb))}`:`${esc(grLbl(ra))} puis ${esc(grLbl(rb))}`,s:viaMain?'par les croisements avec le GR principal':'par le croisement des deux GR'},{k:'a',t:`Suivre ${esc(grLbl(ra))}`,s:`rejoindre ${esc(B.s.name)} depuis ce GR`},{k:'b',t:`Suivre ${esc(grLbl(rb))}`,s:`rejoindre ${esc(A.s.name)} depuis ce GR`}];
+  if(viaMain)opts.push({k:'m',t:`Suivre ${esc(grLbl(M))}`,s:'rejoindre les deux gares depuis le GR principal'});
   grPanel(`<div class="gr-steps"><div class="gr-step">${esc(A.s.name)} → ${esc(B.s.name)}</div><div class="gr-step"><b>3.</b> Quel GR suivre ?</div><div class="gr-list">${opts.map(o=>`<button type="button" data-k="${o.k}"><span>${o.t}<small>${o.s}</small></span></button>`).join('')}</div><div class="gr-actions"><button type="button" id="gr-new">${icoSw}Autres gares</button></div></div>`);
-  document.querySelectorAll('#detail .gr-list button').forEach(b=>b.onclick=()=>{const k=b.dataset.k;gr.ref=k==='combo'?{mode:'combo',ra,rb}:{mode:'single',rel:k==='a'?ra:rb};grCompute();});
+  document.querySelectorAll('#detail .gr-list button').forEach(b=>b.onclick=()=>{const k=b.dataset.k;gr.ref=k==='combo'?{mode:'combo',ra,rb}:{mode:'single',rel:k==='a'?ra:k==='b'?rb:gr.data};grCompute();});
   document.getElementById('gr-new').onclick=()=>{gr.from=null;gr.to=null;gr.ref=null;grStep();};}
 // tronçon exact d'un GR entre deux points accrochés (même chaîne), sinon null
 function grNearAny(rel,p){const f=rel===gr.data?gr.near:rel.near;const n=f(p);if(n)return n;let best=null;
@@ -603,12 +605,19 @@ async function grCompute(){const my=grReq;const A=gr.from,B=gr.to;
       const R=gr.ref.rel,na=nearOf(R)([A.s.lat,A.s.lon]),nb=nearOf(R)([B.s.lat,B.s.lon]);pa=na.pt;pb=nb.pt;refLbl=grLbl(R);
       mid=grSeg(R,na,nb);if(!mid){mid=await brouter(pa,pb);warn=`Les deux gares ne sont pas sur le même tronçon du ${esc(grLbl(R))}. ${off}`;}}
     else if(gr.ref&&gr.ref.mode==='combo'){// GR A jusqu'au croisement, puis GR B
-      const {ra,rb}=gr.ref;const br=ra===gr.data?rb:ra;const na=nearOf(ra)([A.s.lat,A.s.lon]),nb=nearOf(rb)([B.s.lat,B.s.lon]);pa=na.pt;pb=nb.pt;refLbl=grLbl(ra)+' puis '+grLbl(rb);
-      let J=null,jd=1e18;(br.jns||[{pt:br.jpt,onMain:br.jn}]).forEach(j=>{const d=hv(pa,j.pt)+hv(j.pt,pb);if(d<jd){jd=d;J=j;}});const jOnMain=J.onMain,jOnBr=grNearAny(br,J.pt);
-      const ja=ra===gr.data?jOnMain:jOnBr,jb=rb===gr.data?jOnMain:jOnBr;
-      let m1=grSeg(ra,na,ja),m2=grSeg(rb,jb,nb);const miss=[];
-      if(!m1){m1=await brouter(pa,ja.pt);miss.push(grLbl(ra));}if(!m2){m2=await brouter(jb.pt,pb);miss.push(grLbl(rb));}
-      const link=hv(ja.pt,jb.pt)>30?await brouter(ja.pt,jb.pt):[];mid=[...m1,...link,...m2];
+      const {ra,rb}=gr.ref;const M=gr.data;const na=nearOf(ra)([A.s.lat,A.s.lon]),nb=nearOf(rb)([B.s.lat,B.s.lon]);pa=na.pt;pb=nb.pt;
+      const jl=r=>r===M?null:(r.jns||[{pt:r.jpt,onMain:r.jn}]);// croisements d'une branche avec le GR principal
+      // suite de GR à suivre : ra, (M si ni ra ni rb n'est le principal), rb ; croisements choisis pour minimiser le détour
+      const seq=ra===M||rb===M?[ra,rb]:[ra,M,rb];refLbl=seq.map(grLbl).join(' puis ');
+      let bestJ=null,jd=1e18;const JA=jl(ra)||[null],JB=jl(rb)||[null];
+      JA.forEach(a=>JB.forEach(b=>{const p1=a?a.pt:(b?b.pt:pb),p2=b?b.pt:(a?a.pt:pa);const d=hv(pa,p1)+hv(p1,p2)+hv(p2,pb);if(d<jd){jd=d;bestJ=[a,b];}}));
+      const [JAo,JBo]=bestJ;const miss=[];mid=[];
+      const seg=async(r,n1,n2)=>{let m=grSeg(r,n1,n2);if(!m){m=await brouter(n1.pt,n2.pt);miss.push(grLbl(r));}return m;};
+      if(seq.length===2){const J=JAo||JBo;const ja=ra===M?J.onMain:grNearAny(ra,J.pt),jb=rb===M?J.onMain:grNearAny(rb,J.pt);
+        const m1=await seg(ra,na,ja),m2=await seg(rb,jb,nb);const link=hv(ja.pt,jb.pt)>30?await brouter(ja.pt,jb.pt):[];mid=[...m1,...link,...m2];}
+      else{const ja=grNearAny(ra,JAo.pt),jb=grNearAny(rb,JBo.pt);
+        const m1=await seg(ra,na,ja),mm=await seg(M,JAo.onMain,JBo.onMain),m2=await seg(rb,jb,nb);
+        const l1=hv(ja.pt,JAo.onMain.pt)>30?await brouter(ja.pt,JAo.onMain.pt):[],l2=hv(JBo.onMain.pt,jb.pt)>30?await brouter(JBo.onMain.pt,jb.pt):[];mid=[...m1,...l1,...mm,...l2,...m2];}
       if(miss.length)warn=`Tronçon hors chaîne sur ${esc(miss.join(' et '))}. ${off}`;}
     else{const sameChain=A.n.ci===B.n.ci&&(A.n.rel||null)===(B.n.rel||null);
       if(sameChain)mid=grSeg(A.n.rel||gr.data,A.n,B.n);else{mid=await brouter(pa,pb);warn='Les deux gares ne sont pas sur le même tronçon du GR. '+off;}}
