@@ -151,6 +151,10 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
 .gr-actions button.pri{background:var(--on);color:var(--on-fg)}
 .gr-mark{width:22px;height:22px;border-radius:50%;background:var(--gr);color:#fff;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);font:700 11px/18px var(--font);text-align:center}
 .gr-mark.pick{background:var(--track)}
+.gr-mark.via{background:#fff;color:var(--gr);border-color:var(--gr)}
+.gr-branch{stroke-linecap:butt;animation:flow 1.2s linear infinite}
+@media (prefers-reduced-motion:reduce){.gr-branch{animation:none}}
+.gr-list small i{font-style:normal;color:var(--gr)}
 .gr-note{position:absolute;z-index:600;left:50%;transform:translateX(-50%);top:max(64px,calc(env(safe-area-inset-top,0px) + 64px));padding:7px 13px;font-size:12.5px;border-radius:12px;pointer-events:none}
 .gr-note[hidden]{display:none}
 #bstatus{position:absolute;z-index:600;left:50%;transform:translateX(-50%);top:max(64px,calc(env(safe-area-inset-top,0px) + 64px));padding:8px 14px;font-size:12.5px;color:var(--fg);border-radius:12px;max-width:calc(100% - 32px);text-align:center}
@@ -504,9 +508,9 @@ function applyVis(){try{localStorage.setItem('vis',JSON.stringify(vis));}catch(x
   apply();grRefresh();railRefresh();}
 ['gr','grp','train','hikes'].forEach(k=>document.getElementById('vis-'+k).addEventListener('change',e=>{vis[k]=e.target.checked;applyVis();}));
 // --- mode GR : sélection, gares à < 2 km, choix départ/arrivée, itinéraire, GPX
-const gr={sel:null,data:null,stations:[],from:null,to:null,route:null,marks:L.layerGroup().addTo(map)};
+const gr={sel:null,data:null,branches:[],stations:[],from:null,to:null,route:null,marks:L.layerGroup().addTo(map)};
 let grReq=0;
-function grReset(){document.body.classList.remove('gr-on');gr.sel=null;gr.data=null;gr.stations=[];gr.from=null;gr.to=null;gr.route=null;grReq++;
+function grReset(){document.body.classList.remove('gr-on');gr.sel=null;gr.data=null;gr.branches=[];gr.stations=[];gr.from=null;gr.to=null;gr.route=null;grReq++;
   grHi.clearLayers();grRoute.clearLayers();gr.marks.clearLayers();profMark.clearLayers();
   const d=document.getElementById('detail');d.classList.remove('show');d.innerHTML='';history.replaceState(null,'',' ');restyle();}
 async function grSelect(id){if(st.sel!==null)deselect();grReset();gr.sel=id;document.body.classList.add('gr-on');const my=++grReq;
@@ -516,26 +520,52 @@ async function grSelect(id){if(st.sel!==null)deselect();grReset();gr.sel=id;docu
   if(my!==grReq)return;gr.data=data;
   data.chains.forEach(c=>{L.polyline(c,{color:'#fff',weight:7,opacity:.9,interactive:false}).addTo(grHi);L.polyline(c,{color:css(data.net==='GRP'?'--grp':'--gr'),weight:3.5,opacity:1,dashArray:data.net==='GRP'?'8 6':null,interactive:false}).addTo(grHi);});
   // gares à moins de 2 km du GR (grille sur les segments)
-  const CELL=0.02,grid=new Map();const ck=(la,lo)=>Math.floor(la/CELL)+':'+Math.floor(lo/CELL);
-  data.chains.forEach((c,ci)=>{for(let i=1;i<c.length;i++){const a=c[i-1],b=c[i];const i0=Math.min(Math.floor(a[0]/CELL),Math.floor(b[0]/CELL)),i1=Math.max(Math.floor(a[0]/CELL),Math.floor(b[0]/CELL)),j0=Math.min(Math.floor(a[1]/CELL),Math.floor(b[1]/CELL)),j1=Math.max(Math.floor(a[1]/CELL),Math.floor(b[1]/CELL));
-    for(let x=i0;x<=i1;x++)for(let y=j0;y<=j1;y++){const k=x+':'+y;(grid.get(k)||grid.set(k,[]).get(k)).push([ci,i-1]);}}});
-  gr.near=p=>{const i=Math.floor(p[0]/CELL),j=Math.floor(p[1]/CELL);let best=null;
-    for(let x=i-1;x<=i+1;x++)for(let y=j-1;y<=j+1;y++){const c=grid.get(x+':'+y);if(!c)continue;for(const [ci,si] of c){const a=data.chains[ci][si],b=data.chains[ci][si+1];const [d,t]=perpT(p,a,b);if(!best||d<best.d)best={d,ci,si,t,pt:[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]};}}return best;};
-  gr.stations=TR.stations.map(s=>{const n=gr.near([s.lat,s.lon]);return n&&n.d<2000?{s,n}:null;}).filter(Boolean).sort((a,b)=>a.n.d-b.n.d);
-  // ordre le long du GR (chaîne, puis index) pour une liste lisible
-  gr.stations.sort((a,b)=>a.n.ci-b.n.ci||(a.n.si+a.n.t)-(b.n.si+b.n.t));
+  gr.near=grNearFn(data);
+  gr.stations=TR.stations.map(s=>{const n=gr.near([s.lat,s.lon]);return n&&n.d<2000?{s,n}:null;}).filter(Boolean);
+  // GR voisins : relations dont le tracé passe à moins de 2 km de celui-ci ; leurs gares s'ajoutent (marquées « via »)
+  try{await grBranches(data,my);}catch(x){}
+  if(my!==grReq)return;
+  // ordre le long du GR (relation, chaîne, puis index) pour une liste lisible
+  gr.stations.sort((a,b)=>(a.n.rel?1:0)-(b.n.rel?1:0)||(a.n.rel?a.n.rel.id-b.n.rel.id:0)||a.n.ci-b.n.ci||(a.n.si+a.n.t)-(b.n.si+b.n.t));
   const bb=L.polyline(data.chains).getBounds();if(map.getSize().x>0)map.flyToBounds(bb,{paddingTopLeft:[innerWidth>760?400:30,30],paddingBottomRight:[30,innerWidth>760?30:Math.round(innerHeight*.5)],duration:.6});
   grStep();}
+function grNearFn(data){const CELL=0.02,grid=new Map();
+  data.chains.forEach((c,ci)=>{for(let i=1;i<c.length;i++){const a=c[i-1],b=c[i];const i0=Math.min(Math.floor(a[0]/CELL),Math.floor(b[0]/CELL)),i1=Math.max(Math.floor(a[0]/CELL),Math.floor(b[0]/CELL)),j0=Math.min(Math.floor(a[1]/CELL),Math.floor(b[1]/CELL)),j1=Math.max(Math.floor(a[1]/CELL),Math.floor(b[1]/CELL));
+    for(let x=i0;x<=i1;x++)for(let y=j0;y<=j1;y++){const k=x+':'+y;(grid.get(k)||grid.set(k,[]).get(k)).push([ci,i-1]);}}});
+  return p=>{const i=Math.floor(p[0]/CELL),j=Math.floor(p[1]/CELL);let best=null;
+    for(let x=i-1;x<=i+1;x++)for(let y=j-1;y<=j+1;y++){const c=grid.get(x+':'+y);if(!c)continue;for(const [ci,si] of c){const a=data.chains[ci][si],b=data.chains[ci][si+1];const [d,t]=perpT(p,a,b);if(!best||d<best.d)best={d,ci,si,t,pt:[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]};}}return best;};}
+async function grBranches(data,my){const idx=grIndex||{};const bb=L.polyline(data.chains).getBounds();const M=0.02;// ~2 km
+  const cand=Object.values(idx).filter(x=>x.id!==data.id&&x.bbox&&x.bbox[2]>bb.getSouth()-M&&x.bbox[0]<bb.getNorth()+M&&x.bbox[3]>bb.getWest()-M*1.5&&x.bbox[1]<bb.getEast()+M*1.5);
+  cand.sort((a,b)=>b.km-a.km);const list=cand.slice(0,24);
+  const got=await Promise.all(list.map(x=>fetch('gr/r/'+x.id+'.json').then(r=>r.ok?r.json():null).catch(()=>null)));
+  if(my!==grReq)return;
+  const have=new Set(gr.stations.map(x=>x.s));
+  const REACH=15000;// on ne garde d'un GR voisin que ce qui est à moins de 15 km (le long du GR) d'un croisement
+  got.forEach(d0=>{if(!d0||!d0.chains)return;let dmin=1e9,jpt=null;const sub=[];
+    d0.chains.forEach(c=>{const cum=[0];for(let i=1;i<c.length;i++)cum.push(cum[i-1]+hv(c[i-1],c[i]));
+      const keep=new Uint8Array(c.length);let any=false;
+      for(let i=0;i<c.length;i+=3){const n=gr.near(c[i]);if(!n||n.d>=2000)continue;any=true;if(n.d<dmin){dmin=n.d;jpt=c[i];}
+        let a=i;while(a>0&&cum[i]-cum[a-1]<=REACH)a--;let b=i;while(b<c.length-1&&cum[b+1]-cum[i]<=REACH)b++;keep.fill(1,a,b+1);}
+      if(!any)return;let run=[];for(let i=0;i<c.length;i++){if(keep[i])run.push(c[i]);else if(run.length){if(run.length>1)sub.push(run);run=[];}}if(run.length>1)sub.push(run);});
+    if(dmin>2000||!sub.length)return;
+    const d={id:d0.id,ref:d0.ref,name:d0.name,net:d0.net,km:d0.km,chains:sub};
+    const near=grNearFn(d);const st=TR.stations.map(s=>{if(have.has(s))return null;const n=near([s.lat,s.lon]);return n&&n.d<2000?{s,n:Object.assign(n,{rel:d})}:null;}).filter(Boolean);
+    if(!st.length)return;st.forEach(x=>have.add(x.s));gr.stations.push(...st);
+    gr.branches.push({d,jpt,n:st.length});
+    const col=css(d.net==='GRP'?'--grp':'--gr');
+    d.chains.forEach(c=>{L.polyline(c,{color:'#fff',weight:6,opacity:.8,interactive:false}).addTo(grHi);L.polyline(c,{color:col,weight:2.5,opacity:.9,dashArray:'6 10',className:'gr-branch',interactive:false}).addTo(grHi);});});
+  if(gr.branches.length){gr.branches.sort((a,b)=>b.n-a.n);}}
 function grMarks(){gr.marks.clearLayers();gr.stations.forEach((x,i)=>{const picked=x===gr.from||x===gr.to;
-  const m=L.marker([x.s.lat,x.s.lon],{icon:L.divIcon({className:'gr-mark'+(picked?' pick':''),iconSize:[22,22],html:String(i+1)})}).addTo(gr.marks);
-  m.bindTooltip(esc(x.s.name)+' · '+Math.round(x.n.d)+' m du GR');m.on('click',e=>{L.DomEvent.stop(e);grPick(x);});});}
+  const m=L.marker([x.s.lat,x.s.lon],{icon:L.divIcon({className:'gr-mark'+(picked?' pick':'')+(x.n.rel?' via':''),iconSize:[22,22],html:String(i+1)})}).addTo(gr.marks);
+  m.bindTooltip(esc(x.s.name)+' · '+Math.round(x.n.d)+' m du '+esc(grLbl(x.n.rel||gr.data)));m.on('click',e=>{L.DomEvent.stop(e);grPick(x);});});}
 function grPanel(html){const d=document.getElementById('detail');d.classList.add('show');const x=gr.data||grIndex&&grIndex[gr.sel]||{};
   d.innerHTML=`<button class="x" type="button" aria-label="Fermer" id="dx">×</button><div class="t">${esc(x.ref||'GR')}${x.name?' · '+esc(x.name):''}</div>${x.km?`<div class="m">${Math.round(x.km)} km au total${x.net?' · '+esc(x.net):''}</div>`:''}${html}`;
   document.getElementById('dx').onclick=grReset;setMode('map');}
-function grStep(){grMarks();const lst=(items,cls)=>`<div class="gr-list">${items.map(x=>`<button type="button" data-i="${gr.stations.indexOf(x)}"><span class="num">${gr.stations.indexOf(x)+1}</span><span>${esc(x.s.name)}<small>${esc(x.s.lines.join(' · '))} · ${Math.round(x.n.d)} m du GR</small></span></button>`).join('')}</div>`;
+function grStep(){grMarks();const lst=(items,cls)=>`<div class="gr-list">${items.map(x=>`<button type="button" data-i="${gr.stations.indexOf(x)}"><span class="num">${gr.stations.indexOf(x)+1}</span><span>${esc(x.s.name)}<small>${esc(x.s.lines.join(' · '))} · ${Math.round(x.n.d)} m du GR${x.n.rel?` · <i>via ${esc(grLbl(x.n.rel))}</i>`:''}</small></span></button>`).join('')}</div>`;
   if(!gr.stations.length){grPanel(`<div class="gr-warn">Aucune gare à moins de 2 km de ce GR.</div><div class="gr-actions"><button type="button" class="pri" id="gr-dl-all">${icoDl}GPX</button><button type="button" id="gr-3d-all">${ico3d}3D</button></div>`);
     document.getElementById('gr-dl-all').onclick=grGpxAll;document.getElementById('gr-3d-all').onclick=grOpen3dAll;return;}
-  if(!gr.from){grPanel(`<div class="gr-steps"><div class="gr-step"><b>1.</b> Choisis la gare de départ (${gr.stations.length} à moins de 2 km)</div>${lst(gr.stations)}</div>`);}
+  const viaN=gr.stations.filter(x=>x.n.rel).length;const viaTxt=viaN?`, dont ${viaN} via ${gr.branches.map(b=>esc(grLbl(b.d))).join(', ')}`:'';
+  if(!gr.from){grPanel(`<div class="gr-steps"><div class="gr-step"><b>1.</b> Choisis la gare de départ (${gr.stations.length} à moins de 2 km${viaTxt})</div>${lst(gr.stations)}</div>`);}
   else if(!gr.to){grPanel(`<div class="gr-steps"><div class="gr-step">Départ : <b>${esc(gr.from.s.name)}</b> <button type="button" class="chip" id="gr-back">changer</button></div><div class="gr-step"><b>2.</b> Choisis la gare d'arrivée</div>${lst(gr.stations.filter(x=>x!==gr.from))}</div>`);
     document.getElementById('gr-back').onclick=()=>{gr.from=null;grStep();};}
   document.querySelectorAll('.gr-list button').forEach(b=>b.onclick=()=>grPick(gr.stations[+b.dataset.i]));}
@@ -556,10 +586,10 @@ async function elevations(pts){const out=new Array(pts.length).fill(null);
 async function grCompute(){const my=grReq;const A=gr.from,B=gr.to;
   grPanel(`<div class="gr-step">${esc(A.s.name)} → ${esc(B.s.name)}</div><div class="gr-busy"><i></i>Calcul de l'itinéraire…</div>`);
   try{
-    const sameChain=A.n.ci===B.n.ci;let mid,warn='';
-    if(sameChain){const c=gr.data.chains[A.n.ci];let i0=A.n.si+1,i1=B.n.si;const fwd=(A.n.si+A.n.t)<=(B.n.si+B.n.t);
+    const sameChain=A.n.ci===B.n.ci&&(A.n.rel||null)===(B.n.rel||null);let mid,warn='';
+    if(sameChain){const c=(A.n.rel||gr.data).chains[A.n.ci];let i0=A.n.si+1,i1=B.n.si;const fwd=(A.n.si+A.n.t)<=(B.n.si+B.n.t);
       mid=fwd?[A.n.pt,...c.slice(A.n.si+1,B.n.si+1),B.n.pt]:[A.n.pt,...c.slice(B.n.si+1,A.n.si+1).reverse(),B.n.pt];}
-    else{mid=await brouter(A.n.pt,B.n.pt);warn='Les deux gares ne sont pas sur le même tronçon du GR. Entre elles, l\'itinéraire est calculé au plus près du GR, sans garantie de le suivre.';}
+    else{mid=await brouter(A.n.pt,B.n.pt);warn=(A.n.rel||null)!==(B.n.rel||null)?`Les deux gares sont sur des GR différents (${esc(grLbl(A.n.rel||gr.data))} et ${esc(grLbl(B.n.rel||gr.data))}). Entre elles, l'itinéraire est calculé au plus près des GR, sans garantie de les suivre.`:'Les deux gares ne sont pas sur le même tronçon du GR. Entre elles, l\'itinéraire est calculé au plus près du GR, sans garantie de le suivre.';}
     const [leg1,leg2]=await Promise.all([brouter([A.s.lat,A.s.lon],A.n.pt),brouter(B.n.pt,[B.s.lat,B.s.lon])]);
     if(my!==grReq)return;
     let pts=[...leg1,...mid,...leg2].filter((p,i,a)=>i===0||hv(p,a[i-1])>1);
@@ -587,6 +617,7 @@ async function grCompute(){const my=grReq;const A=gr.from,B=gr.to;
     document.getElementById('gr-dl').onclick=grGpx;document.getElementById('gr-3d').onclick=()=>open3d({pts:tpts,name:`${(gr.data&&gr.data.ref)||'GR'} · ${A.s.name} → ${B.s.name}`,km:+(km/1000).toFixed(1),dpm,grChains:gr.data&&gr.data.chains});document.getElementById('gr-new').onclick=()=>{gr.from=null;gr.to=null;gr.route=null;grRoute.clearLayers();profMark.clearLayers();grHi.eachLayer(l=>l.setStyle({opacity:1}));grStep();};
   }catch(e){if(my!==grReq)return;grPanel(`<div class="gr-step">${esc(A.s.name)} → ${esc(B.s.name)}</div><div class="gr-warn">Routage indisponible (${esc(e.message||e)}). Réessaie dans une minute.</div><div class="gr-actions"><button type="button" class="pri" id="gr-retry">Réessayer</button><button type="button" id="gr-new">Autres gares</button></div>`);
     document.getElementById('gr-retry').onclick=grCompute;document.getElementById('gr-new').onclick=()=>{gr.from=null;gr.to=null;grStep();};}}
+function grLbl(d){return d?(d.ref||d.name||'GR'):'GR';}
 function grSlug(v){return String(v).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');}
 function grGpxAll(){const x=gr.data;if(!x)return;const name=`${x.ref||x.name||'GR'}${x.ref&&x.name?' · '+x.name:''}`;
   const gpx=`<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="rando-idf" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>${esc(name)}</name><desc>${x.km} km, tracé complet (OpenStreetMap) le ${new Date().toISOString().slice(0,10)}.</desc><time>${new Date().toISOString()}</time></metadata>\n<trk><name>${esc(name)}</name>\n${x.chains.map(c=>`<trkseg>\n${c.map(p=>`<trkpt lat="${p[0]}" lon="${p[1]}"></trkpt>`).join('\n')}\n</trkseg>`).join('\n')}\n</trk>\n</gpx>`;
