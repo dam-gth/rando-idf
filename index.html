@@ -244,9 +244,15 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
 @media (max-width:760px){
   #panel{left:10px;right:10px;width:auto;max-width:none;top:auto;bottom:max(10px,env(safe-area-inset-bottom,0px));height:78vh}
   .mode-map #panel{top:auto;bottom:max(10px,env(safe-area-inset-bottom,0px));height:auto;max-height:62vh}
-  /* recherche au clavier : le volet passe en haut de l'écran pour ne pas être caché par le clavier iOS */
-  .mode-map.qfocus #panel{top:max(10px,env(safe-area-inset-top,0px));bottom:auto;max-height:70vh}
-  .mode-map.qfocus .tabs{display:none}
+  /* téléphone : onglets + recherche dans une barre fixe en haut (#topbar, créée par le script), calques en bas à droite */
+  #topbar{position:absolute;z-index:1001;left:10px;right:10px;top:max(10px,env(safe-area-inset-top,0px));padding:10px 0 0;display:flex;flex-direction:column}
+  #topbar .tabs{order:0;margin:0 14px 10px;border:1px solid var(--hair);border-radius:11px;background:var(--fill);padding:3px}
+  #topbar #gsearch{margin:0 14px 12px}
+  .mode-list #topbar{left:0;right:0;top:0;border-radius:0;padding-top:calc(10px + env(safe-area-inset-top,0px))}
+  .mode-list #topbar .tabs{margin:0 24px 10px}
+  body.mode-list #panel{padding-top:var(--topbar,96px)} /* prime sur la règle padding-top plus bas */
+  #basemap{top:auto;bottom:calc(var(--sheet,0px) + max(16px,env(safe-area-inset-bottom,0px)));flex-direction:column-reverse}
+  .leaflet-control-scale{margin-bottom:calc(var(--sheet,0px) + 6px)!important}
   .mode-map #detail.show{overflow:auto;min-height:0;flex:0 1 auto;-webkit-overflow-scrolling:touch}
   .mode-list #panel{top:0;bottom:0;left:0;right:0;height:auto;border-radius:0;border:0;box-shadow:none;padding-top:env(safe-area-inset-top,0px)}
   .mode-list .hd{padding-left:max(18px,env(safe-area-inset-left,0px))}
@@ -952,6 +958,11 @@ async function townSet(ll,name){if(st.sel!==null)deselect();if(gr.sel!==null)grR
   d.innerHTML=`<button class="x" type="button" aria-label="Fermer" id="dx">×</button><div class="t">${esc(name)}</div><div class="m">${list.length} GR et GRP à moins de 25 km</div>
     ${list.length?`<div class="gr-list town-list">${list.map(o=>`<button type="button" data-id="${o.x.id}"><i class="sw" style="background:${o.x.net==='GRP'?'var(--grp)':'var(--gr)'};width:14px;height:4px;border-radius:2px;flex:none"></i><span>${esc(o.x.ref||o.x.name)}<small>${o.x.ref&&o.x.name?esc(o.x.name)+' · ':''}${Math.round(o.x.km)} km · à ${o.dd<1000?Math.round(o.dd)+' m':(o.dd/1000).toFixed(1)+' km'}</small></span></button>`).join('')}</div>`:'<div class="gr-warn">Aucun GR à moins de 25 km.</div>'}`;
   document.getElementById('dx').onclick=townClear;d.querySelectorAll('.town-list button').forEach(b=>b.onclick=()=>{const keep={pin:town.pin,circle:town.circle};town.pin=null;town.circle=null;grSelect(+b.dataset.id);town.pin=keep.pin;town.circle=keep.circle;});}
+if(matchMedia('(max-width:760px)').matches){const tb=document.createElement('div');tb.id='topbar';tb.className='glass';
+  tb.appendChild(document.querySelector('.tabs'));tb.appendChild(document.getElementById('gsearch'));document.body.appendChild(tb);
+  const panel=document.getElementById('panel');const upd=()=>{document.documentElement.style.setProperty('--topbar',tb.offsetHeight+'px');
+    const sheet=document.body.classList.contains('mode-map')&&document.getElementById('detail').classList.contains('show')?panel.offsetHeight:0;document.documentElement.style.setProperty('--sheet',sheet+'px');};
+  new ResizeObserver(upd).observe(panel);new ResizeObserver(upd).observe(tb);new MutationObserver(upd).observe(document.getElementById('detail'),{attributes:true,attributeFilter:['class']});new MutationObserver(upd).observe(document.body,{attributes:true,attributeFilter:['class']});upd();}
 function setMode(m){document.getElementById('panel').classList.remove('tools-hide');document.body.classList.toggle('mode-map',m==='map');document.body.classList.toggle('mode-list',m==='list');
   document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.m===m));
   if(m==='list'){const c=document.querySelector('.card.on');if(c)scrollListTo(c,'center');}}
