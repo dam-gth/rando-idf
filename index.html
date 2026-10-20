@@ -251,8 +251,11 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
   .mode-list #topbar{left:0;right:0;top:0;border-radius:0;padding-top:calc(10px + env(safe-area-inset-top,0px))}
   .mode-list #topbar .tabs{margin:0 24px 10px}
   body.mode-list #panel{padding-top:var(--topbar,96px)} /* prime sur la règle padding-top plus bas */
+  .mode-list .tools{padding-top:12px} /* le champ de recherche de la liste ne colle plus à la barre du haut */
   #basemap{top:auto;bottom:calc(var(--sheet,0px) + max(16px,env(safe-area-inset-bottom,0px)));flex-direction:column-reverse}
   .leaflet-control-scale{margin-bottom:calc(var(--sheet,0px) + 6px)!important}
+  /* GR ou rando ouvert : la barre du haut (onglets + recherche) disparaît, le bouton Calques reste */
+  body.gr-on #topbar,body.mode-map:has(#detail.show) #topbar{display:none}
   .mode-map #detail.show{overflow:auto;min-height:0;flex:0 1 auto;-webkit-overflow-scrolling:touch}
   .mode-list #panel{top:0;bottom:0;left:0;right:0;height:auto;border-radius:0;border:0;box-shadow:none;padding-top:env(safe-area-inset-top,0px)}
   .mode-list .hd{padding-left:max(18px,env(safe-area-inset-left,0px))}
@@ -508,12 +511,12 @@ function select(n){if(gr.sel!==null)grReset();st.sel=n;const r=byN[n],t=T[n],a=T
   d.innerHTML=`<button class="x" type="button" aria-label="Fermer" id="dx">×</button><div class="t">${n}. ${esc(r?r.t:t.name)}</div>
   ${r?`<div class="m">${r.km} km · ${r.dp} m D+ · ${esc(r.dur)} · ${esc(r.lvl)} · ${esc(r.dept)}</div><div class="acc">Transport : ${esc(r.tr)}</div>`:`<div class="m">${t.km} km mesurés sur le GPX</div>`}
   <div class="acc">Départ : ${acc(a.from)}${t.loop?' · boucle':`<br>Arrivée : ${acc(a.to)}`}</div>
-  <div class="prof" id="prof"></div>
+  <div class="prof" id="prof"></div><div class="bars" id="bars"></div>
   <div class="links">${r?`<a href="${esc(r.url)}" target="_blank" rel="noopener">Fiche ›</a>`:''}<a href="${esc(r?r.gpx:missN[n]?missN[n].gpx:'')}" target="_blank" rel="noopener">GPX ›</a></div>
   <div class="go" id="go"></div><div class="gr-actions"><button type="button" id="b3d">${ico3d}Voir en 3D</button></div>`;
   document.getElementById('dx').onclick=deselect;
-  document.getElementById('b3d').onclick=()=>open3d({pts:t.pts,name:`${n}. ${r?r.t:t.name}`,km:r?r.km:t.km,dpm:t.dpm});
-  renderGo(n);renderProfile(n);
+  const tb=trackBars(t);document.getElementById('b3d').onclick=()=>open3d({pts:t.pts,name:`${n}. ${r?r.t:t.name}`,km:r?r.km:t.km,dpm:t.dpm,bars:tb});
+  renderGo(n);renderProfile(n);renderBars(tb,document.getElementById('bars'));
   history.replaceState(null,'','#'+n);restyle();
   setMode('map');}
 
@@ -658,12 +661,13 @@ function buildBars(parts){const way=[],sur=[],grb=[];let x=0;
     runs.forEach(r=>{const d=r.d*sc;push(way,d,Math.floor(r.k/3));push(sur,d,r.k%3);x+=d;});x-=len;
     push(grb,len,src);x+=len;});
   return {tot:x,way,sur,gr:grb};}
+function trackBars(t){if(!t.k||!t.k.length)return null;const p=t.pts;p.runs=t.k.map((k,i)=>({d:hv(p[i],p[i+1]),k}));p.src='';const b=buildBars([p]);b.gr=null;return b;}
 function renderBars(b,el,prof=document.getElementById('prof')){if(!el||!b||!b.tot){if(el)el.innerHTML='';return;}
-  const grNames=[...new Set(b.gr.map(s=>s.v))].filter(v=>v!=='Accès'&&v!=='Hors GR');const grCol=v=>v==='Accès'?'#BFC4CA':v==='Hors GR'?'#E6A23C':['#7A1F2E','#C4607C','#3B6EA5','#2E8B57','#8B6B3E'][grNames.indexOf(v)%5];
+  const grNames=[...new Set((b.gr||[]).map(s=>s.v))].filter(v=>v!=='Accès'&&v!=='Hors GR');const grCol=v=>v==='Accès'?'#BFC4CA':v==='Hors GR'?'#E6A23C':['#7A1F2E','#C4607C','#3B6EA5','#2E8B57','#8B6B3E'][grNames.indexOf(v)%5];
   const pct=(arr,v)=>Math.round(100*arr.filter(s=>s.v===v).reduce((a,s)=>a+(s.d1-s.d0),0)/b.tot);
   const bar=(title,arr,name,col)=>{const vals=[...new Set(arr.map(s=>s.v))].sort((p,q)=>pct(arr,q)-pct(arr,p));
     return `<div><div class="bl"><b>${title}</b></div><div class="bar" data-bar>${arr.map(s=>`<i style="width:${(100*(s.d1-s.d0)/b.tot).toFixed(2)}%;background:${col(s.v)}" title="${esc(name(s.v))} · ${((s.d1-s.d0)/1000).toFixed(1)} km"></i>`).join('')}</div><div class="lg">${vals.slice(0,5).map(v=>`<span><i style="background:${col(v)}"></i>${esc(name(v))} ${pct(arr,v)} %</span>`).join('')}</div></div>`;};
-  el.innerHTML=bar('Revêtement',b.sur,v=>SURN[v],v=>SURC[v])+bar('GR suivi',b.gr,v=>v,grCol);
+  el.innerHTML=bar('Revêtement',b.sur,v=>SURN[v],v=>SURC[v])+(b.gr?bar('GR suivi',b.gr,v=>v,grCol):'');
   // survoler une barre déplace le curseur du profil
 el.querySelectorAll('[data-bar]').forEach(d=>{const mv=ev=>{const r=d.getBoundingClientRect();const cx=(ev.touches?ev.touches[0].clientX:ev.clientX)-r.left;if(prof&&prof._setCursor)prof._setCursor(Math.max(0,Math.min(1,cx/r.width))*b.tot);};
     d.addEventListener('mousemove',mv);d.addEventListener('touchmove',mv,{passive:true});d.addEventListener('mouseleave',()=>{if(prof&&prof._setCursor)prof._setCursor(null);});});}
