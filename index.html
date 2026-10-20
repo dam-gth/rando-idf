@@ -56,6 +56,16 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
 .search input{width:100%;padding:9px 12px 9px 34px;border:1px solid var(--hair);border-radius:11px;background:var(--fill);color:var(--fg);font:inherit;outline:0}
 .search input:focus{border-color:var(--hair2)}
 .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round}
+#gsearch{margin:0 18px 12px;display:none}
+.mode-map #gsearch{display:block}
+#panel:has(#detail.show) #gsearch{display:none}
+.sug{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:5;background:var(--glass2);-webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px);border:1px solid var(--hair);border-radius:11px;box-shadow:var(--shadow);overflow:hidden;max-height:300px;overflow-y:auto}
+.sug button{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;color:var(--fg);padding:9px 12px;font:inherit;font-size:13px;text-align:left;cursor:pointer}
+.sug button:hover,.sug button.on{background:var(--fill)}
+.sug button small{display:block;color:var(--muted);font-size:11.5px}
+.sug button i{display:inline-block;width:9px;height:9px;border-radius:50%;background:#2563EB;flex:none}
+.sug button i.gr{background:var(--gr);border-radius:2px}.sug button i.grp{background:var(--grp);border-radius:2px}
+.town-pin{width:16px;height:16px;border-radius:50%;background:#2563EB;border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.45)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{border:1px solid var(--hair);background:transparent;color:var(--fg);padding:5px 11px;border-radius:999px;font:inherit;font-size:12px;cursor:pointer;line-height:1.25;transition:background .15s,border-color .15s}
 .chip:hover{background:var(--fill)}
@@ -251,6 +261,7 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
   .hd{display:none}
   .mode-map #detail.show{padding-top:14px}
   .gr-list{max-height:112px} /* deux gares visibles, le reste au défilement */
+.gr-list.town-list{max-height:40vh}
   body.gr-on .tabs{display:none} /* gare à gare sur GR : onglets inutiles pendant le choix des gares */
   body.gr-on.mode-map #detail.show{padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
   /* onglets en bas de la feuille, sous le pouce */
@@ -270,6 +281,7 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
 <aside id="panel" class="glass">
   <div class="hd"><h1>Carte rando France</h1></div>
   <div class="tabs" role="tablist" aria-label="Affichage"><button type="button" role="tab" data-m="map" aria-selected="true">Carte</button><button type="button" role="tab" data-m="list" aria-selected="false">Liste IDF</button></div>
+  <div id="gsearch" class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="gq" type="search" placeholder="Commune, GR…" autocomplete="off" aria-label="Rechercher une commune ou un GR"><div class="sug" id="gsug" hidden></div></div>
   <div class="tools">
     <div class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" type="search" placeholder="Titre, gare, n°, département…" autocomplete="off" aria-label="Rechercher"></div>
     <div class="chips" id="flt">
@@ -885,6 +897,40 @@ document.getElementById('dept').innerHTML+=depts.map(d=>`<option>${esc(d)}</opti
 document.getElementById('dept').onchange=e=>{st.dept=e.target.value;apply();};
 document.getElementById('lvl').onchange=e=>{st.lvl=e.target.value;apply();};
 document.getElementById('list').addEventListener('click',e=>{const c=e.target.closest('.card');if(c)select(+c.dataset.n);});
+// --- recherche : communes (géocodeur Géoplateforme) et GR/GRP (index) ; une commune posée liste les GR à moins de 50 km
+const town={pin:null,circle:null,ll:null,name:''};const RAD=50000;
+let gqT=null,gqSeq=0;const gq=document.getElementById('gq'),gsug=document.getElementById('gsug');
+function gsugHide(){gsug.hidden=true;gsug.innerHTML='';}
+async function gqSearch(q){const my=++gqSeq;const out=[];
+  const idx=await grLoadIndex();const nq=q.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  Object.values(idx).filter(x=>((x.ref||'')+' '+x.name).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').includes(nq)).sort((a,b)=>b.km-a.km).slice(0,5).forEach(x=>out.push({t:'gr',x}));
+  try{const r=await fetch('https://data.geopf.fr/geocodage/search?'+new URLSearchParams({q,type:'municipality',limit:5})).then(r=>r.json());
+    (r.features||[]).forEach(f=>out.push({t:'town',name:f.properties.name||f.properties.label,sub:[f.properties.postcode,f.properties.context].filter(Boolean).join(' · '),ll:[f.geometry.coordinates[1],f.geometry.coordinates[0]]}));}catch(e){}
+  if(my!==gqSeq)return;if(!out.length){gsugHide();return;}
+  gsug.innerHTML=out.map((o,i)=>o.t==='gr'?`<button type="button" data-i="${i}"><i class="${o.x.net==='GRP'?'grp':'gr'}"></i><span>${esc(o.x.ref||o.x.name)}<small>${o.x.ref&&o.x.name?esc(o.x.name)+' · ':''}${Math.round(o.x.km)} km · ${o.x.net}</small></span></button>`
+    :`<button type="button" data-i="${i}"><i></i><span>${esc(o.name)}<small>${esc(o.sub)}</small></span></button>`).join('');gsug.hidden=false;
+  gsug.querySelectorAll('button').forEach(b=>b.onclick=()=>{const o=out[+b.dataset.i];gsugHide();if(o.t==='gr'){gq.value=o.x.ref||o.x.name;townClear();grSelect(o.x.id);}else{gq.value=o.name;townSet(o.ll,o.name);}});}
+gq.addEventListener('input',()=>{clearTimeout(gqT);const q=gq.value.trim();if(q.length<2){gsugHide();return;}gqT=setTimeout(()=>gqSearch(q),250);});
+gq.addEventListener('search',()=>{if(!gq.value)townClear();});gq.addEventListener('keydown',e=>{if(e.key==='Escape'){gsugHide();gq.blur();}if(e.key==='Enter'){const b=gsug.querySelector('button');if(b)b.click();}});
+document.addEventListener('click',e=>{if(!gsug.contains(e.target)&&e.target!==gq)gsugHide();});
+function townClear(){if(town.pin){map.removeLayer(town.pin);town.pin=null;}if(town.circle){map.removeLayer(town.circle);town.circle=null;}town.ll=null;
+  const d=document.getElementById('detail');if(d.dataset.town){d.classList.remove('show');d.innerHTML='';delete d.dataset.town;}}
+async function townSet(ll,name){if(st.sel!==null)deselect();if(gr.sel!==null)grReset();townClear();town.ll=ll;town.name=name;
+  town.pin=L.marker(ll,{icon:L.divIcon({className:'town-pin',iconSize:[16,16]}),zIndexOffset:900}).addTo(map).bindTooltip(esc(name));
+  town.circle=L.circle(ll,{radius:RAD,color:'#2563EB',weight:1,opacity:.5,fill:true,fillOpacity:.03,interactive:false}).addTo(map);
+  if(!vis.gr||!vis.grp){vis.gr=true;vis.grp=true;applyVis();}
+  map.flyToBounds(town.circle.getBounds(),{paddingTopLeft:[innerWidth>760?400:20,20],paddingBottomRight:[20,innerWidth>760?20:Math.round(innerHeight*.45)],duration:.8});
+  const d=document.getElementById('detail');d.dataset.town='1';d.classList.add('show');setMode('map');
+  d.innerHTML=`<button class="x" type="button" aria-label="Fermer" id="dx">×</button><div class="t">${esc(name)}</div><div class="m">GR et GRP à moins de 50 km</div><div class="gr-busy"><i></i>Recherche…</div>`;document.getElementById('dx').onclick=townClear;
+  // distance de chaque GR au point : aperçu national (chaînes à 300 m), un seul fichier
+  let pieces=[];try{pieces=await fetch('gr/overview.json').then(r=>r.ok?r.json():[]);}catch(e){}
+  const idx=await grLoadIndex();if(town.ll!==ll)return;
+  const dmin=new Map();pieces.forEach(pc=>{let m=dmin.get(pc.id)??Infinity;for(let i=1;i<pc.pts.length;i++){const [dd]=perpT(ll,pc.pts[i-1],pc.pts[i]);if(dd<m)m=dd;}if(pc.pts.length===1){const dd=hv(ll,pc.pts[0]);if(dd<m)m=dd;}dmin.set(pc.id,m);});
+  const list=[...dmin].filter(([id,dd])=>dd<=RAD&&idx[id]).map(([id,dd])=>({x:idx[id],dd})).sort((a,b)=>a.dd-b.dd);
+  if(town.ll!==ll)return;
+  d.innerHTML=`<button class="x" type="button" aria-label="Fermer" id="dx">×</button><div class="t">${esc(name)}</div><div class="m">${list.length} GR et GRP à moins de 50 km</div>
+    ${list.length?`<div class="gr-list town-list">${list.map(o=>`<button type="button" data-id="${o.x.id}"><i class="sw" style="background:${o.x.net==='GRP'?'var(--grp)':'var(--gr)'};width:14px;height:4px;border-radius:2px;flex:none"></i><span>${esc(o.x.ref||o.x.name)}<small>${o.x.ref&&o.x.name?esc(o.x.name)+' · ':''}${Math.round(o.x.km)} km · à ${o.dd<1000?Math.round(o.dd)+' m':(o.dd/1000).toFixed(1)+' km'}</small></span></button>`).join('')}</div>`:'<div class="gr-warn">Aucun GR à moins de 50 km.</div>'}`;
+  document.getElementById('dx').onclick=townClear;d.querySelectorAll('.town-list button').forEach(b=>b.onclick=()=>{const keep={pin:town.pin,circle:town.circle};town.pin=null;town.circle=null;grSelect(+b.dataset.id);town.pin=keep.pin;town.circle=keep.circle;});}
 function setMode(m){document.getElementById('panel').classList.remove('tools-hide');document.body.classList.toggle('mode-map',m==='map');document.body.classList.toggle('mode-list',m==='list');
   document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.m===m));
   if(m==='list'){const c=document.querySelector('.card.on');if(c)scrollListTo(c,'center');}}
