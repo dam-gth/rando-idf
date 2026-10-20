@@ -336,13 +336,13 @@ function setTheme(k,save=true){if(k==='auto')delete document.documentElement.dat
   if(save)try{localStorage.setItem('theme',k);}catch(x){}
   bases.relief.eachLayer(l=>{if(l.options.className==='graybase')l.setUrl(grayUrl());});}
 const bases={
-  topo:L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,errorTileUrl:E,attribution:'© OpenStreetMap, SRTM · OpenTopoMap (CC-BY-SA)',className:'tamed'}),
+  topo:L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,errorTileUrl:E,detectRetina:true,attribution:'© OpenStreetMap, SRTM · OpenTopoMap (CC-BY-SA)',className:'tamed'}),
   // IGN Géoplateforme, couches libres sans clé (le SCAN 25 demande une clé personnelle, voir README)
   // gris + ombrage du relief (Esri World Hillshade, sans clé), fondu en multiplication
-  relief:L.layerGroup([L.tileLayer(grayUrl(),{maxZoom:16,errorTileUrl:E,className:'graybase'}),
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}',{maxZoom:16,errorTileUrl:E,className:'shade',attribution:'© Esri'})]),
-  ign:L.tileLayer('https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png',{maxZoom:19,errorTileUrl:E,attribution:'© IGN'}),
-  photo:L.tileLayer('https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg',{maxZoom:19,errorTileUrl:E,attribution:'© IGN'})};
+  relief:L.layerGroup([L.tileLayer(grayUrl(),{maxZoom:16,errorTileUrl:E,detectRetina:true,className:'graybase'}),
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}',{maxZoom:16,errorTileUrl:E,detectRetina:true,className:'shade',attribution:'© Esri'})]),
+  ign:L.tileLayer('https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png',{maxZoom:19,errorTileUrl:E,detectRetina:true,attribution:'© IGN'}),
+  photo:L.tileLayer('https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg',{maxZoom:19,errorTileUrl:E,detectRetina:true,attribution:'© IGN'})};
 let cur='';
 function setBase(k){cur=k;Object.values(bases).forEach(l=>map.removeLayer(l));bases[k].addTo(map);
   document.querySelectorAll('#laymenu button[data-b]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.b===k));
