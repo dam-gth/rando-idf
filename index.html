@@ -354,7 +354,7 @@ function drawLines(keys,strong){lineHi.clearLayers();[...new Set(keys.map(geoKey
   L.polyline(TR.lines[l].segs,{color:TL,weight:strong?2.5:2,opacity:1,dashArray:'8 10',className:'tl',interactive:false}).addTo(lineHi);});}
 // tracés
 // Chaque tracé = trait visible (non cliquable) + trait invisible large (zone de touche ~24 px) au-dessus
-const trackLayers={},hitLayers={},trackHi=L.layerGroup().addTo(map),hitPane=map.createPane('hit');hitPane.style.zIndex=450;
+const trackLayers={},hitLayers={},trackHi=L.layerGroup().addTo(map),hitPane=map.createPane('hit');hitPane.style.zIndex=450;map.createPane('grpick').style.zIndex=610;
 const HIT=('ontouchstart' in window)?26:16;
 Object.keys(T).forEach(n=>{const t=T[n],r=byN[n];
   const pl=L.polyline(t.pts,{color:TRACK,weight:3,opacity:.9,dashArray:r?null:'5 6',interactive:false}).addTo(map);
@@ -496,7 +496,7 @@ async function grRefresh(){const note=document.getElementById('grnote');
     if(!grOvP){grOvP=Promise.all([grLoadIndex(),fetch('gr/overview.json').then(r=>r.ok?r.json():[])]).then(([,pieces])=>{pieces.forEach(pc=>{
       grAdd(grOv,L.polyline(pc.pts,{color:css(pc.net==='GRP'?'--grp':'--gr'),weight:pc.net==='GRP'?1.2:1.5,opacity:.8,dashArray:pc.net==='GRP'?'4 4':null,interactive:false,grVis:true,grId:pc.id,grNet:pc.net}));
       const hit=grAdd(grOv,L.polyline(pc.pts,{weight:10,opacity:0,pane:'hit',bubblingMouseEvents:false,grId:pc.id,grNet:pc.net}));
-      hit.bindTooltip(()=>esc(grName(pc.id)),{sticky:true});hit.on('click',e=>{L.DomEvent.stop(e);grSelect(pc.id);});});restyle();}).catch(()=>{});}
+      hit.bindTooltip(()=>esc(grName(pc.id)),{sticky:true});hit.on('click',e=>{L.DomEvent.stop(e);if(gr.pick.getLayers().length)return;grSelect(pc.id);});});restyle();}).catch(()=>{});}
     return;}
   if(grLayer.hasLayer(grOv))grLayer.removeLayer(grOv);if(!grLayer.hasLayer(grTilesG))grTilesG.addTo(grLayer);
   await grLoadIndex();const b=map.getBounds();const keys=[];
@@ -505,7 +505,7 @@ async function grRefresh(){const note=document.getElementById('grnote');
     fetch('gr/t/'+k+'.json').then(r=>r.ok?r.json():[]).then(pieces=>{pieces.forEach(pc=>{
       grAdd(g,L.polyline(pc.pts,{color:css(pc.net==='GRP'?'--grp':'--gr'),weight:pc.net==='GRP'?2:2.5,opacity:.9,dashArray:pc.net==='GRP'?'6 5':null,interactive:false,grVis:true,grId:pc.id,grNet:pc.net}));
       const hit=grAdd(g,L.polyline(pc.pts,{weight:HIT,opacity:0,pane:'hit',bubblingMouseEvents:false,grId:pc.id,grNet:pc.net}));
-      hit.bindTooltip(()=>esc(grName(pc.id)),{sticky:true});hit.on('click',e=>{L.DomEvent.stop(e);grSelect(pc.id);});});
+      hit.bindTooltip(()=>esc(grName(pc.id)),{sticky:true});hit.on('click',e=>{L.DomEvent.stop(e);if(gr.pick.getLayers().length)return;grSelect(pc.id);});});
       restyle();}).catch(()=>{});}}
 map.on('moveend zoomend',()=>grRefresh());
 // --- visibilité
@@ -588,7 +588,7 @@ function grRefStep(){const A=gr.from,B=gr.to;const ra=A.n.rel||gr.data,rb=B.n.re
   document.querySelectorAll('#detail .gr-list button').forEach(b=>b.onclick=()=>{const k=b.dataset.k;go(k==='combo'?{mode:'combo',ra,rb}:{mode:'single',rel:k==='a'?ra:k==='b'?rb:gr.data});});
   document.getElementById('gr-new').onclick=()=>{gr.pick.clearLayers();gr.from=null;gr.to=null;gr.ref=null;grStep();};
   // au toucher : zones larges invisibles sur le GR principal et les GR voisins ; toucher un GR = le suivre
-  gr.pick.clearLayers();[gr.data,...gr.branches.map(b=>b.d)].forEach(rel=>rel.chains.forEach(c=>{const l=L.polyline(c,{color:'#000',opacity:0,weight:22,interactive:true,bubblingMouseEvents:false}).addTo(gr.pick);
+  gr.pick.clearLayers();[gr.data,...gr.branches.map(b=>b.d)].forEach(rel=>rel.chains.forEach(c=>{const l=L.polyline(c,{color:'#000',opacity:0,weight:22,interactive:true,bubblingMouseEvents:false,pane:'grpick'}).addTo(gr.pick);
     l.bindTooltip('Suivre '+esc(grLbl(rel)),{sticky:true});l.on('click',e=>{L.DomEvent.stop(e);go({mode:'single',rel});});}));}
 // tronçon exact d'un GR entre deux points accrochés (même chaîne), sinon null
 function grNearAny(rel,p){const f=rel===gr.data?gr.near:rel.near;const n=f(p);if(n)return n;let best=null;
