@@ -533,7 +533,8 @@ function grPanel(html){const d=document.getElementById('detail');d.classList.add
   d.innerHTML=`<button class="x" type="button" aria-label="Fermer" id="dx">×</button><div class="t">${esc(x.ref||'GR')}${x.name?' · '+esc(x.name):''}</div>${x.km?`<div class="m">${Math.round(x.km)} km au total${x.net?' · '+esc(x.net):''}</div>`:''}${html}`;
   document.getElementById('dx').onclick=grReset;setMode('map');}
 function grStep(){grMarks();const lst=(items,cls)=>`<div class="gr-list">${items.map(x=>`<button type="button" data-i="${gr.stations.indexOf(x)}"><span class="num">${gr.stations.indexOf(x)+1}</span><span>${esc(x.s.name)}<small>${esc(x.s.lines.join(' · '))} · ${Math.round(x.n.d)} m du GR</small></span></button>`).join('')}</div>`;
-  if(!gr.stations.length){grPanel('<div class="gr-warn">Aucune gare à moins de 2 km de ce GR.</div>');return;}
+  if(!gr.stations.length){grPanel(`<div class="gr-warn">Aucune gare à moins de 2 km de ce GR.</div><div class="gr-actions"><button type="button" class="pri" id="gr-dl-all">${icoDl}GPX</button><button type="button" id="gr-3d-all">${ico3d}3D</button></div>`);
+    document.getElementById('gr-dl-all').onclick=grGpxAll;document.getElementById('gr-3d-all').onclick=grOpen3dAll;return;}
   if(!gr.from){grPanel(`<div class="gr-steps"><div class="gr-step"><b>1.</b> Choisis la gare de départ (${gr.stations.length} à moins de 2 km)</div>${lst(gr.stations)}</div>`);}
   else if(!gr.to){grPanel(`<div class="gr-steps"><div class="gr-step">Départ : <b>${esc(gr.from.s.name)}</b> <button type="button" class="chip" id="gr-back">changer</button></div><div class="gr-step"><b>2.</b> Choisis la gare d'arrivée</div>${lst(gr.stations.filter(x=>x!==gr.from))}</div>`);
     document.getElementById('gr-back').onclick=()=>{gr.from=null;grStep();};}
@@ -586,6 +587,20 @@ async function grCompute(){const my=grReq;const A=gr.from,B=gr.to;
     document.getElementById('gr-dl').onclick=grGpx;document.getElementById('gr-3d').onclick=()=>open3d({pts:tpts,name:`${(gr.data&&gr.data.ref)||'GR'} · ${A.s.name} → ${B.s.name}`,km:+(km/1000).toFixed(1),dpm,grChains:gr.data&&gr.data.chains});document.getElementById('gr-new').onclick=()=>{gr.from=null;gr.to=null;gr.route=null;grRoute.clearLayers();profMark.clearLayers();grHi.eachLayer(l=>l.setStyle({opacity:1}));grStep();};
   }catch(e){if(my!==grReq)return;grPanel(`<div class="gr-step">${esc(A.s.name)} → ${esc(B.s.name)}</div><div class="gr-warn">Routage indisponible (${esc(e.message||e)}). Réessaie dans une minute.</div><div class="gr-actions"><button type="button" class="pri" id="gr-retry">Réessayer</button><button type="button" id="gr-new">Autres gares</button></div>`);
     document.getElementById('gr-retry').onclick=grCompute;document.getElementById('gr-new').onclick=()=>{gr.from=null;gr.to=null;grStep();};}}
+function grSlug(v){return String(v).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');}
+function grGpxAll(){const x=gr.data;if(!x)return;const name=`${x.ref||x.name||'GR'}${x.ref&&x.name?' · '+x.name:''}`;
+  const gpx=`<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="rando-idf" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>${esc(name)}</name><desc>${x.km} km, tracé complet (OpenStreetMap) le ${new Date().toISOString().slice(0,10)}.</desc><time>${new Date().toISOString()}</time></metadata>\n<trk><name>${esc(name)}</name>\n${x.chains.map(c=>`<trkseg>\n${c.map(p=>`<trkpt lat="${p[0]}" lon="${p[1]}"></trkpt>`).join('\n')}\n</trkseg>`).join('\n')}\n</trk>\n</gpx>`;
+  const blob=new Blob([gpx],{type:'application/gpx+xml'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${grSlug(x.ref||x.name||'gr')}.gpx`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},2000);}
+async function grOpen3dAll(){const x=gr.data;if(!x)return;const my=grReq;
+  // plus longue chaîne, rééchantillonnée (≤ 1200 points) pour les altitudes et le survol
+  let best=null,bl=0;x.chains.forEach(c=>{let l=0;for(let i=1;i<c.length;i++)l+=hv(c[i-1],c[i]);if(l>bl){bl=l;best=c;}});if(!best)return;
+  const step=Math.max(1,Math.ceil(best.length/1200));const pts=best.filter((p,i)=>i%step===0||i===best.length-1);
+  const b=document.getElementById('gr-3d-all');if(b){b.disabled=true;b.textContent='Altitudes…';}
+  let ele=null;try{ele=await elevations(pts);}catch(e){}
+  if(my!==grReq)return;if(b){b.disabled=false;b.innerHTML=ico3d+'3D';}
+  const tpts=pts.map((p,i)=>[p[0],p[1],ele?ele[i]:null]);
+  let dpm=null;if(ele&&ele.some(v=>v!=null)){const e=ele.filter(v=>v!=null);let ref=e[0],g=0;for(let i=1;i<e.length;i++){const d=e[i]-ref;if(d>=3){g+=d;ref=e[i];}else if(d<=-3)ref=e[i];}dpm=Math.round(g);}
+  open3d({pts:tpts,name:`${x.ref||x.name||'GR'}${x.ref&&x.name?' · '+x.name:''}`,km:+(bl/1000).toFixed(1),dpm,grChains:x.chains});}
 function grGpx(){const r=gr.route;if(!r)return;const x=gr.data||{};const slug=s=>String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
   const name=`${x.ref||'GR'} · ${r.A.s.name} → ${r.B.s.name}`;
   const gpx=`<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="rando-idf" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>${esc(name)}</name><desc>${(r.km/1000).toFixed(1)} km, ${r.dpm!=null?r.dpm+' m D+, ':''}${Math.round(100*r.kmGr/r.km)} % sur le GR. Itinéraire calculé (BRouter, OpenStreetMap, altitudes IGN) le ${new Date().toISOString().slice(0,10)}.</desc><time>${new Date().toISOString()}</time></metadata>\n<trk><name>${esc(name)}</name><trkseg>\n${r.pts.map(p=>`<trkpt lat="${p[0]}" lon="${p[1]}">${p[2]!=null?`<ele>${p[2]}</ele>`:''}</trkpt>`).join('\n')}\n</trkseg></trk>\n</gpx>`;
