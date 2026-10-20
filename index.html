@@ -185,6 +185,11 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
 .via-pin{width:18px;height:18px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#2563EB;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);cursor:grab}
 .gr-hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.35}
 .leaflet-layer.shade{mix-blend-mode:multiply;opacity:.6}
+:root[data-theme=dark] .leaflet-layer.shade{opacity:.45}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .leaflet-layer.shade{opacity:.45}}
+#laymenu .seg{display:flex;gap:4px;padding:2px 4px 4px}
+#laymenu .seg button{flex:1;justify-content:center;padding:6px 8px;border:1px solid var(--hair);font-size:12px}
+#laymenu .seg button[aria-pressed=true]{background:var(--on);color:var(--on-fg);border-color:transparent}
 /* vue 3D plein écran */
 #v3d{position:fixed;inset:0;z-index:1200;background:var(--bg)}
 #v3d[hidden]{display:none}
@@ -291,6 +296,7 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
 <label><input type="checkbox" id="vis-grp"><i class="sw" style="background:repeating-linear-gradient(90deg,var(--grp) 0 4px,transparent 4px 7px)"></i>GRP</label>
 <label><input type="checkbox" id="vis-train" checked><i class="sw" style="background:repeating-linear-gradient(90deg,var(--tl) 0 4px,transparent 4px 7px)"></i>Lignes de train</label>
 <label><input type="checkbox" id="vis-hikes" checked><i class="sw" style="background:var(--track)"></i>Fiches rando IDF</label>
+<div class="sep"></div><div class="lbl">Thème</div><div class="seg"><button type="button" data-t="auto" aria-pressed="true">Auto</button><button type="button" data-t="light" aria-pressed="false">Clair</button><button type="button" data-t="dark" aria-pressed="false">Sombre</button></div>
 </div></div>
 <div id="grnote" class="glass gr-note" hidden></div>
 <div id="v3d" hidden><div id="v3dmap"></div><div id="v3dbar" class="glass"><button type="button" id="v3dfly">Survol</button><button type="button" id="v3dnorth">Nord</button><button type="button" id="v3dbase" class="ic" aria-label="Fond de carte" title="Fond de carte" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg></button><button type="button" class="x" id="v3dx" aria-label="Fermer la 3D">×</button></div><div id="v3dinfo" class="glass"><div id="v3dname"></div><div class="prof" id="v3dprof"></div><div class="bars" id="v3dbars"></div></div><div id="v3dorbbox" class="glass" title="Glisser pour orienter la caméra · double-clic : nord, 60°"><canvas id="v3dorb" width="88" height="88" aria-label="Orientation de la caméra"></canvas></div><div id="v3dmsg" class="glass" hidden></div><div id="v3dspeed" class="glass" hidden><span>Vitesse</span><input type="range" id="v3dspeedr" min="0.25" max="15" step="0.25" value="1" aria-label="Vitesse du survol"><b id="v3dspeedv">×1</b></div><div id="v3dbasemenu" class="glass" role="menu" hidden><button type="button" data-b="gray" aria-pressed="true"><span>Gris relief</span></button><button type="button" data-b="ign" aria-pressed="false"><span>Plan IGN</span></button><button type="button" data-b="topo" aria-pressed="false"><span>Topo<small>Esri World Topo</small></span></button><button type="button" data-b="photo" aria-pressed="false"><span>Photo aérienne</span></button></div></div>
@@ -321,23 +327,34 @@ L.control.zoom({position:'bottomright'}).addTo(map);
 L.control.scale({imperial:false,position:'bottomright'}).addTo(map);
 // Fonds neutres : gris Esri par défaut, OSM désaturé par CSS, topo. Si un fond ne charge pas, on passe au suivant.
 const E=L.Util.emptyImageUrl;
+// thème : auto (système), clair ou sombre ; le fond « Gris relief » et la 3D passent en gris foncé en sombre
+const GRAY_LIGHT='https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',GRAY_DARK='https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+function isDark(){const t=document.documentElement.dataset.theme;return t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches);}
+function grayUrl(){return isDark()?GRAY_DARK:GRAY_LIGHT;}
+function setTheme(k,save=true){if(k==='auto')delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=k;
+  document.querySelectorAll('#laymenu .seg button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.t===k));
+  if(save)try{localStorage.setItem('theme',k);}catch(x){}
+  bases.relief.eachLayer(l=>{if(l.options.className==='graybase')l.setUrl(grayUrl());});}
 const bases={
   topo:L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,errorTileUrl:E,attribution:'© OpenStreetMap, SRTM · OpenTopoMap (CC-BY-SA)',className:'tamed'}),
   // IGN Géoplateforme, couches libres sans clé (le SCAN 25 demande une clé personnelle, voir README)
   // gris + ombrage du relief (Esri World Hillshade, sans clé), fondu en multiplication
-  relief:L.layerGroup([L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:16,errorTileUrl:E}),
+  relief:L.layerGroup([L.tileLayer(grayUrl(),{maxZoom:16,errorTileUrl:E,className:'graybase'}),
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}',{maxZoom:16,errorTileUrl:E,className:'shade',attribution:'© Esri'})]),
   ign:L.tileLayer('https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png',{maxZoom:19,errorTileUrl:E,attribution:'© IGN'}),
   photo:L.tileLayer('https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg',{maxZoom:19,errorTileUrl:E,attribution:'© IGN'})};
 let cur='';
 function setBase(k){cur=k;Object.values(bases).forEach(l=>map.removeLayer(l));bases[k].addTo(map);
-  document.querySelectorAll('#laymenu button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.b===k));
+  document.querySelectorAll('#laymenu button[data-b]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.b===k));
   try{localStorage.setItem('base',k);}catch(x){}}
 {let b='relief';try{b=localStorage.getItem('base')||'relief';}catch(x){}setBase(bases[b]?b:'relief');} // l'ancien fond « Gris » sans relief a été retiré : repli sur Gris relief
 const layBtn=document.getElementById('lay'),layMenu=document.getElementById('laymenu');
 const openLay=o=>{layMenu.hidden=!o;layBtn.setAttribute('aria-expanded',o);};
 layBtn.onclick=e=>{e.stopPropagation();openLay(layMenu.hidden);};
-document.querySelectorAll('#laymenu button').forEach(b=>b.onclick=()=>{setBase(b.dataset.b);openLay(false);});
+document.querySelectorAll('#laymenu button[data-b]').forEach(b=>b.onclick=()=>{setBase(b.dataset.b);openLay(false);});
+document.querySelectorAll('#laymenu .seg button').forEach(b=>b.onclick=()=>setTheme(b.dataset.t));
+{let t='auto';try{t=localStorage.getItem('theme')||'auto';}catch(x){}setTheme(['light','dark'].includes(t)?t:'auto',false);}
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>setTheme(document.documentElement.dataset.theme||'auto',false));
 layMenu.addEventListener('click',e=>e.stopPropagation());
 document.addEventListener('click',e=>{if(!layMenu.hidden&&!e.target.closest('#basemap'))openLay(false);});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')openLay(false);});
@@ -731,7 +748,7 @@ async function open3d(o){const box=document.getElementById('v3d');box.hidden=fal
   const pts=o.pts.map(p=>[p[1],p[0]]);const lats=o.pts.map(p=>p[0]),lons=o.pts.map(p=>p[1]);
   const bounds=[[Math.min(...lons),Math.min(...lats)],[Math.max(...lons),Math.max(...lats)]];
   const style={version:8,sources:{
-    gray:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:16,attribution:'© Esri · © OpenStreetMap'},
+    gray:{type:'raster',tiles:[grayUrl()],tileSize:256,maxzoom:16,attribution:'© Esri · © OpenStreetMap'},
     shade:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:16},
     ign:{type:'raster',tiles:['https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png'],tileSize:256,maxzoom:18,attribution:'© IGN'},
     // Topo en 3D : Esri World Topo, même dessin à toutes les échelles (OpenTopoMap change de style sous le zoom 11, ce qui se voit en vue inclinée)
@@ -775,7 +792,7 @@ function stopFly(){flyReq++;if(v3d)try{v3d.setSourceTileLodParams(9.314,3);}catc
 // Préchargement avant survol : on met en cache HTTP les tuiles (fond, ombrage, altitude) d'un couloir autour du tracé,
 // aux zooms que la caméra va utiliser, pour que le vol ne montre pas de tuiles manquantes.
 function tileXY(lat,lon,z){const n=2**z;return [Math.floor((lon+180)/360*n),Math.floor((1-Math.log(Math.tan(lat*Math.PI/180)+1/Math.cos(lat*Math.PI/180))/Math.PI)/2*n)];}
-const TPL={gray:['https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}','https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}'],
+const TPL={get gray(){return [grayUrl(),'https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}'];},_gray:['https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}','https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}'],
   ign:['https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png','https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}'],
   topo:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}'],
   photo:['https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg']};
