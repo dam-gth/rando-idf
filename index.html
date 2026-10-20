@@ -265,6 +265,7 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
   .mode-map #detail.show{padding-top:14px}
   .gr-list{max-height:112px} /* deux gares visibles, le reste au défilement */
 .gr-list.town-list{max-height:40vh}
+@media (max-width:760px){.gr-list.town-list{max-height:168px}} /* trois GR visibles, le reste au défilement vertical */
   body.gr-on .tabs{display:none} /* gare à gare sur GR : onglets inutiles pendant le choix des gares */
   body.gr-on.mode-map #detail.show{padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
   /* onglets en bas de la feuille, sous le pouce */
