@@ -146,6 +146,7 @@ body{background:var(--bg);color:var(--fg);font:13.5px/1.45 var(--font);-webkit-f
 .bars .bar i{display:block;height:100%}
 .bars .lg{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:10.5px;color:var(--muted);margin-top:3px}
 .bars .lg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.gr-step small{display:block;font-weight:400;color:var(--muted);margin-top:2px}
 .gr-badge{display:inline-flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .gr-badge span{font-size:11px;font-weight:600;border:1px solid var(--hair);border-radius:5px;padding:1px 7px;color:var(--muted)}
 .gr-badge span.ok{color:var(--gr)}
@@ -515,10 +516,10 @@ function applyVis(){try{localStorage.setItem('vis',JSON.stringify(vis));}catch(x
   apply();grRefresh();railRefresh();}
 ['gr','grp','train','hikes'].forEach(k=>document.getElementById('vis-'+k).addEventListener('change',e=>{vis[k]=e.target.checked;applyVis();}));
 // --- mode GR : sélection, gares à < 2 km, choix départ/arrivée, itinéraire, GPX
-const gr={sel:null,data:null,branches:[],ref:null,stations:[],from:null,to:null,route:null,marks:L.layerGroup().addTo(map)};
+const gr={sel:null,data:null,branches:[],ref:null,stations:[],from:null,to:null,route:null,marks:L.layerGroup().addTo(map),pick:L.layerGroup().addTo(map)};
 let grReq=0;
 function grReset(){document.body.classList.remove('gr-on');gr.sel=null;gr.data=null;gr.branches=[];gr.ref=null;gr.stations=[];gr.from=null;gr.to=null;gr.route=null;grReq++;
-  grHi.clearLayers();grRoute.clearLayers();gr.marks.clearLayers();profMark.clearLayers();
+  grHi.clearLayers();grRoute.clearLayers();gr.marks.clearLayers();gr.pick.clearLayers();profMark.clearLayers();
   const d=document.getElementById('detail');d.classList.remove('show');d.innerHTML='';history.replaceState(null,'',' ');restyle();}
 async function grSelect(id){if(st.sel!==null)deselect();grReset();gr.sel=id;document.body.classList.add('gr-on');const my=++grReq;
   if(!map.hasLayer(grHi))grHi.addTo(map);if(!map.hasLayer(grRoute))grRoute.addTo(map);
@@ -582,9 +583,13 @@ function grRefStep(){const A=gr.from,B=gr.to;const ra=A.n.rel||gr.data,rb=B.n.re
   const M=gr.data,viaMain=ra!==M&&rb!==M;
   const opts=[{k:'combo',t:viaMain?`${esc(grLbl(ra))}, ${esc(grLbl(M))} puis ${esc(grLbl(rb))}`:`${esc(grLbl(ra))} puis ${esc(grLbl(rb))}`,s:viaMain?'par les croisements avec le GR principal':'par le croisement des deux GR'},{k:'a',t:`Suivre ${esc(grLbl(ra))}`,s:`rejoindre ${esc(B.s.name)} depuis ce GR`},{k:'b',t:`Suivre ${esc(grLbl(rb))}`,s:`rejoindre ${esc(A.s.name)} depuis ce GR`}];
   if(viaMain)opts.push({k:'m',t:`Suivre ${esc(grLbl(M))}`,s:'rejoindre les deux gares depuis le GR principal'});
-  grPanel(`<div class="gr-steps"><div class="gr-step">${esc(A.s.name)} → ${esc(B.s.name)}</div><div class="gr-step"><b>3.</b> Quel GR suivre ?</div><div class="gr-list">${opts.map(o=>`<button type="button" data-k="${o.k}"><span>${o.t}<small>${o.s}</small></span></button>`).join('')}</div><div class="gr-actions"><button type="button" id="gr-new">${icoSw}Autres gares</button></div></div>`);
-  document.querySelectorAll('#detail .gr-list button').forEach(b=>b.onclick=()=>{const k=b.dataset.k;gr.ref=k==='combo'?{mode:'combo',ra,rb}:{mode:'single',rel:k==='a'?ra:k==='b'?rb:gr.data};grCompute();});
-  document.getElementById('gr-new').onclick=()=>{gr.from=null;gr.to=null;gr.ref=null;grStep();};}
+  grPanel(`<div class="gr-steps"><div class="gr-step">${esc(A.s.name)} → ${esc(B.s.name)}</div><div class="gr-step"><b>3.</b> Quel GR suivre ? <small>Touche un GR sur la carte, ou choisis :</small></div><div class="gr-list">${opts.map(o=>`<button type="button" data-k="${o.k}"><span>${o.t}<small>${o.s}</small></span></button>`).join('')}</div><div class="gr-actions"><button type="button" id="gr-new">${icoSw}Autres gares</button></div></div>`);
+  const go=ref=>{gr.pick.clearLayers();gr.ref=ref;grCompute();};
+  document.querySelectorAll('#detail .gr-list button').forEach(b=>b.onclick=()=>{const k=b.dataset.k;go(k==='combo'?{mode:'combo',ra,rb}:{mode:'single',rel:k==='a'?ra:k==='b'?rb:gr.data});});
+  document.getElementById('gr-new').onclick=()=>{gr.pick.clearLayers();gr.from=null;gr.to=null;gr.ref=null;grStep();};
+  // au toucher : zones larges invisibles sur le GR principal et les GR voisins ; toucher un GR = le suivre
+  gr.pick.clearLayers();[gr.data,...gr.branches.map(b=>b.d)].forEach(rel=>rel.chains.forEach(c=>{const l=L.polyline(c,{color:'#000',opacity:0,weight:22,interactive:true,bubblingMouseEvents:false}).addTo(gr.pick);
+    l.bindTooltip('Suivre '+esc(grLbl(rel)),{sticky:true});l.on('click',e=>{L.DomEvent.stop(e);go({mode:'single',rel});});}));}
 // tronçon exact d'un GR entre deux points accrochés (même chaîne), sinon null
 function grNearAny(rel,p){const f=rel===gr.data?gr.near:rel.near;const n=f(p);if(n)return n;let best=null;
   rel.chains.forEach((c,ci)=>{for(let si=0;si<c.length-1;si++){const [d,t]=perpT(p,c[si],c[si+1]);if(!best||d<best.d)best={d,ci,si,t,pt:[c[si][0]+(c[si+1][0]-c[si][0])*t,c[si][1]+(c[si+1][1]-c[si][1])*t]};}});return best;}
