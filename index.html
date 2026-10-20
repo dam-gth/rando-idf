@@ -917,7 +917,11 @@ function townClear(){if(town.pin){map.removeLayer(town.pin);town.pin=null;}if(to
   const d=document.getElementById('detail');if(d.dataset.town){d.classList.remove('show');d.innerHTML='';delete d.dataset.town;}}
 async function townSet(ll,name){if(st.sel!==null)deselect();if(gr.sel!==null)grReset();townClear();town.ll=ll;town.name=name;
   town.pin=L.marker(ll,{icon:L.divIcon({className:'town-pin',iconSize:[16,16]}),zIndexOffset:900}).addTo(map).bindTooltip(esc(name));
-  town.circle=L.circle(ll,{radius:RAD,color:'#2563EB',weight:1,opacity:.5,fill:true,fillOpacity:.03,interactive:false}).addTo(map);
+  // masque : tout ce qui est hors du cercle de 50 km est estompé (polygone monde avec un trou circulaire)
+  const ring=[];for(let i=0;i<=72;i++){const b=i/72*2*Math.PI,dr=RAD/6371000,la1=ll[0]*Math.PI/180,lo1=ll[1]*Math.PI/180;const la2=Math.asin(Math.sin(la1)*Math.cos(dr)+Math.cos(la1)*Math.sin(dr)*Math.cos(b));const lo2=lo1+Math.atan2(Math.sin(b)*Math.sin(dr)*Math.cos(la1),Math.cos(dr)-Math.sin(la1)*Math.sin(la2));ring.push([la2*180/Math.PI,lo2*180/Math.PI]);}
+  if(!map.getPane('mask')){map.createPane('mask').style.zIndex=430;map.getPane('mask').style.pointerEvents='none';}
+  town.circle=L.polygon([[[-89,-180],[-89,180],[89,180],[89,-180]],ring],{pane:'mask',stroke:true,color:'#2563EB',weight:1.5,opacity:.7,fillColor:css('--bg'),fillOpacity:.6,fillRule:'evenodd',interactive:false}).addTo(map);
+  town.circle.getBounds=()=>L.latLngBounds(ring);
   if(!vis.gr||!vis.grp){vis.gr=true;vis.grp=true;applyVis();}
   map.flyToBounds(town.circle.getBounds(),{paddingTopLeft:[innerWidth>760?400:20,20],paddingBottomRight:[20,innerWidth>760?20:Math.round(innerHeight*.45)],duration:.8});
   const d=document.getElementById('detail');d.dataset.town='1';d.classList.add('show');setMode('map');
