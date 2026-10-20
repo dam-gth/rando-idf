@@ -626,7 +626,7 @@ async function open3d(o){const box=document.getElementById('v3d');box.hidden=fal
     v3d=new M.Map({container:'v3dmap',style,bounds,fitBoundsOptions:{padding:60},maxPitch:75,attributionControl:{compact:true}});
     // `load` peut partir avant qu'on écoute : on s'y abonne et on vérifie aussi loaded()
     let started=false;const start=()=>{if(started||!v3d)return;started=true;
-      try{v3d.setTerrain({source:'dem',exaggeration:2.2});}catch(e){}v3dMsg('');
+      try{v3d.setTerrain({source:'dem',exaggeration:1});}catch(e){}v3dMsg('');
       // caméra inclinée dans l'axe départ → arrivée
       const a=pts[0],b=pts[pts.length-1];const br=(Math.atan2(b[0]-a[0],b[1]-a[1])*180/Math.PI+360)%360;
       v3d.easeTo({pitch:60,bearing:br,duration:1200});orbDraw();setBase3d(base3d);
