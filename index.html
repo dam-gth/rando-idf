@@ -919,14 +919,15 @@ async function townSet(ll,name){if(st.sel!==null)deselect();if(gr.sel!==null)grR
   town.pin=L.marker(ll,{icon:L.divIcon({className:'town-pin',iconSize:[16,16]}),zIndexOffset:900}).addTo(map).bindTooltip(esc(name));
   // masque : net jusqu'au rayon, puis estompage progressif (dégradé radial SVG) ; au-delà de 4 rayons, polygone monde estompé
   const dest=(b,d)=>{const dr=d/6371000,la1=ll[0]*Math.PI/180,lo1=ll[1]*Math.PI/180;const la2=Math.asin(Math.sin(la1)*Math.cos(dr)+Math.cos(la1)*Math.sin(dr)*Math.cos(b));const lo2=lo1+Math.atan2(Math.sin(b)*Math.sin(dr)*Math.cos(la1),Math.cos(dr)-Math.sin(la1)*Math.sin(la2));return [la2*180/Math.PI,lo2*180/Math.PI];};
-  const ring=[],far=[];for(let i=0;i<=72;i++){ring.push(dest(i/72*2*Math.PI,RAD));far.push(dest(i/72*2*Math.PI,RAD*4));}
+  const ring=[];for(let i=0;i<=72;i++)ring.push(dest(i/72*2*Math.PI,RAD));
   if(!map.getPane('mask')){map.createPane('mask').style.zIndex=430;map.getPane('mask').style.pointerEvents='none';}
   const bg=css('--bg'),OP=.62;const grp=L.layerGroup().addTo(map);
-  grp.addLayer(L.polygon([[[-89,-180],[-89,180],[89,180],[89,-180]],far],{pane:'mask',stroke:false,fillColor:bg,fillOpacity:OP,fillRule:'evenodd',interactive:false}));
+  // boîte du dégradé (±4 R) ; le masque extérieur a un trou exactement de cette boîte, sans chevauchement ni jour
+  const north=dest(0,RAD*4)[0],south=dest(Math.PI,RAD*4)[0],east=dest(Math.PI/2,RAD*4)[1],west=dest(3*Math.PI/2,RAD*4)[1];
+  grp.addLayer(L.polygon([[[-89,-180],[-89,180],[89,180],[89,-180]],[[south,west],[south,east],[north,east],[north,west]]],{pane:'mask',stroke:false,fillColor:bg,fillOpacity:OP,fillRule:'evenodd',interactive:false}));
   // dégradé : transparent jusqu'au rayon (25 % de la boîte de ±4 R), opaque à 1,8 R
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('preserveAspectRatio','none');
   svg.innerHTML=`<defs><radialGradient id="townfade" cx="50%" cy="50%" r="50%"><stop offset="25%" stop-color="${bg}" stop-opacity="0"/><stop offset="45%" stop-color="${bg}" stop-opacity="${OP}"/><stop offset="100%" stop-color="${bg}" stop-opacity="${OP}"/></radialGradient></defs><rect width="100" height="100" fill="url(#townfade)"/>`;
-  const north=dest(0,RAD*4)[0],south=dest(Math.PI,RAD*4)[0],east=dest(Math.PI/2,RAD*4)[1],west=dest(3*Math.PI/2,RAD*4)[1];
   grp.addLayer(L.svgOverlay(svg,[[south,west],[north,east]],{pane:'mask',interactive:false}));
   grp.addLayer(L.polyline(ring,{pane:'mask',color:'#2563EB',weight:1.2,opacity:.6,dashArray:'4 6',interactive:false}));
   town.circle=grp;town.circle.getBounds=()=>L.latLngBounds(ring);
